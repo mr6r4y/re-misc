@@ -147,3 +147,21 @@ class Elf64_Sym(c.Structure):
         ("st_value", Elf64_Addr),
         ("st_size", Elf64_Xword),
     ]
+
+
+# /* special section indexes */
+# #define SHN_UNDEF   0
+# #define SHN_LORESERVE   0xff00
+# #define SHN_LOPROC  0xff00
+# #define SHN_HIPROC  0xff1f
+# #define SHN_ABS     0xfff1
+# #define SHN_COMMON  0xfff2
+# #define SHN_HIRESERVE   0xffff
+
+SHN_UNDEF = 0
+SHN_LORESERVE = 0xff00
+SHN_LOPROC = 0xff00
+SHN_HIPROC = 0xff1f
+SHN_ABS = 0xfff1
+SHN_COMMON = 0xfff2
+SHN_HIRESERVE = 0xffff

@@ -39,6 +39,17 @@ ST_BIND = {
 }
 
 
+SHN = {
+    eh.SHN_UNDEF: "SHN_UNDEF",
+    eh.SHN_LORESERVE: "SHN_LORESERVE",
+    eh.SHN_LOPROC: "SHN_LOPROC",
+    eh.SHN_HIPROC: "SHN_HIPROC",
+    eh.SHN_ABS: "SHN_ABS",
+    eh.SHN_COMMON: "SHN_COMMON",
+    eh.SHN_HIRESERVE: "SHN_HIRESERVE"
+}
+
+
 def parse_symbols(dsm_sect_list, dss_sect):
     symbols = []
     for ds in dsm_sect_list:
@@ -49,8 +60,11 @@ def parse_symbols(dsm_sect_list, dss_sect):
             "st_size": ds.st_size,
             "st_other": ds.st_other,
             "st_shndx": ds.st_shndx,
+            "shn": SHN.get(ds.st_shndx, "?"),
             "st_info": ds.st_info,
+            # mimic ELF_ST_TYPE macro
             "st_type": ST_TYPE.get(ds.st_info & 0xf, "?"),
+            # mimic ELF_ST_BIND macro
             "st_bind": ST_BIND.get(ds.st_info >> 4, "?")
         })
 
@@ -121,6 +135,7 @@ def main():
             print "st_size: 0x%x" % i["st_size"]
             print "st_other: 0x%x" % i["st_other"]
             print "st_shndx: 0x%x" % i["st_shndx"]
+            print "shn: %s" % i["shn"]
             print "st_info: 0x%x" % i["st_info"]
             print "st_type: %s" % i["st_type"]
             print "st_bind: %s" % i["st_bind"]
