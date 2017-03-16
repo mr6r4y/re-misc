@@ -12,11 +12,22 @@ import ctypes as c
 import r2pipe as r2p
 
 import lin_hh.elf_h as eh
-from utils import bytes2str
+import utils as u
 
 
 class NotSupportedError(StandardError):
     pass
+
+
+def parse_symbols(dsm_sect_list, dss_sect):
+    symbols = []
+    for ds in dsm_sect_list:
+        name = dss_sect[ds.st_name:].partition("\x00")[0]
+        symbols.append({
+            "name": name
+        })
+
+    return symbols
 
 
 def elf_dynsym(r2ob):
@@ -33,7 +44,7 @@ def elf_dynsym(r2ob):
     dsm = filter(lambda a: 'dynsym' in a['name'], sections)[0]
 
     # get dynsym section as binary string
-    dsm_sect = bytes2str(r2ob.cmdj("pcj %i@%i" % (dsm['size'], dsm['paddr'])))
+    dsm_sect = u.bytes2str(r2ob.cmdj("pcj %i@%i" % (dsm['size'], dsm['paddr'])))
 
     # cast to Elf_Sym structures
     dsm_sect_c = c.create_string_buffer(dsm_sect)
@@ -43,10 +54,11 @@ def elf_dynsym(r2ob):
 
     # get dynstr section as binary string
     dss = filter(lambda a: 'dynstr' in a['name'], sections)[0]
-    dss_sect_c = c.create_string_buffer(bytes2str(r2ob.cmdj("pcj %i@%i" % (dss['size'], dss['paddr']))))
+    dss_sect = u.bytes2str(r2ob.cmdj("pcj %i@%i" % (dss['size'], dss['paddr'])))
 
     # TO-DO: Make another class that represents Elf_Sym struct that is human friendly for showing and printing and
     # cast between constants and strings in dss_sect_c
+    return parse_symbols(dsm_sect_l, dss_sect)
 
 
 def get_args():
@@ -66,7 +78,7 @@ def main():
     elf_file = args.file
 
     e = r2p.open(elf_file)
-    elf_dynsym(e)
+    print elf_dynsym(e)
 
 
 if __name__ == "__main__":
