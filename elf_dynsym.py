@@ -11,7 +11,7 @@ import argparse
 import ctypes as c
 import r2pipe as r2p
 
-from lin_hh.elf_h import Elf64_Sym
+import lin_hh.elf_h as eh
 from utils import bytes2str
 
 
@@ -22,8 +22,11 @@ class NotSupportedError(StandardError):
 def elf_dynsym(r2ob):
     # check file type
     finfo = r2ob.cmdj('ij')
-    if finfo.get('class', None) not in ['ELF64', 'ELF32']:
+    if finfo.get('bin', {}).get('class', None) not in ['ELF64', 'ELF32']:
         raise NotSupportedError("File is not ELF")
+
+    e_cl = finfo.get('bin', {}).get('class', None)
+    Elf_Sym = eh.Elf64_Sym if e_cl == 'ELF64' else eh.Elf32_Sym
 
     # list all sections
     sections = r2ob.cmdj("Sj")
@@ -32,12 +35,18 @@ def elf_dynsym(r2ob):
     # get dynsym section as binary string
     dsm_sect = bytes2str(r2ob.cmdj("pcj %i@%i" % (dsm['size'], dsm['paddr'])))
 
-    
-    
+    # cast to Elf_Sym structures
+    dsm_sect_c = c.create_string_buffer(dsm_sect)
+    dsm_sect_l = []
+    for i in range(len(dsm_sect) / c.sizeof(Elf_Sym)):
+        dsm_sect_l.append(u.cast(dsm_sect_c, i*c.sizeof(Elf_Sym), Elf_Sym))
 
     # get dynstr section as binary string
     dss = filter(lambda a: 'dynstr' in a['name'], sections)[0]
-    dss_sect = bytes2str(r2ob.cmdj("pcj %i@%i" % (dss['size'], dss['paddr'])))
+    dss_sect_c = c.create_string_buffer(bytes2str(r2ob.cmdj("pcj %i@%i" % (dss['size'], dss['paddr']))))
+
+    # TO-DO: Make another class that represents Elf_Sym struct that is human friendly for showing and printing and
+    # cast between constants and strings in dss_sect_c
 
 
 def get_args():
@@ -55,7 +64,7 @@ def get_args():
 def main():
     args = get_args()
     elf_file = args.file
-    
+
     e = r2p.open(elf_file)
     elf_dynsym(e)
 

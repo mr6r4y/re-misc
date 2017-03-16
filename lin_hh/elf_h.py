@@ -120,12 +120,12 @@ STT_TLS = 6
 
 class Elf32_Sym(c.Structure):
     _fields_ = [
-        ("st_name", Elf32_Word)
-        ("st_value", Elf32_Addr)
-        ("st_size", Elf32_Word)
-        ("st_info", c.c_ubyte)
-        ("st_other", c.c_ubyte)
-        ("st_shndx", Elf32_Half)
+        ("st_name", Elf32_Word),
+        ("st_value", Elf32_Addr),
+        ("st_size", Elf32_Word),
+        ("st_info", c.c_ubyte),
+        ("st_other", c.c_ubyte),
+        ("st_shndx", Elf32_Half),
     ]
 
 
@@ -143,7 +143,7 @@ class Elf64_Sym(c.Structure):
         ("st_name", Elf64_Word),
         ("st_info", c.c_ubyte),
         ("st_other", c.c_ubyte),
-        ("st_shndx", c.c_uint16),
-        ("st_value", c.c_uint64),
-        ("st_size", c.c_uint64),
+        ("st_shndx", Elf64_Half),
+        ("st_value", Elf64_Addr),
+        ("st_size", Elf64_Xword),
     ]
