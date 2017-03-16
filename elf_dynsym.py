@@ -8,6 +8,8 @@ __all__ = []
 import os
 import argparse
 
+import json
+
 import ctypes as c
 import r2pipe as r2p
 
@@ -19,12 +21,37 @@ class NotSupportedError(StandardError):
     pass
 
 
+ST_TYPE = {
+    eh.STT_NOTYPE: "STT_NOTYPE",
+    eh.STT_OBJECT: "STT_OBJECT",
+    eh.STT_FUNC: "STT_FUNC",
+    eh.STT_SECTION: "STT_SECTION",
+    eh.STT_FILE: "STT_FILE",
+    eh.STT_COMMON: "STT_COMMON",
+    eh.STT_TLS: "STT_TLS"
+}
+
+
+ST_BIND = {
+    eh.STB_LOCAL: "STB_LOCAL",
+    eh.STB_GLOBAL: "STB_GLOBAL",
+    eh.STB_WEAK: "STB_WEAK"
+}
+
+
 def parse_symbols(dsm_sect_list, dss_sect):
     symbols = []
     for ds in dsm_sect_list:
         name = dss_sect[ds.st_name:].partition("\x00")[0]
         symbols.append({
-            "name": name
+            "name": name,
+            "st_value": ds.st_value,
+            "st_size": ds.st_size,
+            "st_other": ds.st_other,
+            "st_shndx": ds.st_shndx,
+            "st_info": ds.st_info,
+            "st_type": ST_TYPE.get(ds.st_info & 0xf, "?"),
+            "st_bind": ST_BIND.get(ds.st_info >> 4, "?")
         })
 
     return symbols
@@ -56,8 +83,6 @@ def elf_dynsym(r2ob):
     dss = filter(lambda a: 'dynstr' in a['name'], sections)[0]
     dss_sect = u.bytes2str(r2ob.cmdj("pcj %i@%i" % (dss['size'], dss['paddr'])))
 
-    # TO-DO: Make another class that represents Elf_Sym struct that is human friendly for showing and printing and
-    # cast between constants and strings in dss_sect_c
     return parse_symbols(dsm_sect_l, dss_sect)
 
 
@@ -65,6 +90,11 @@ def get_args():
     parser = argparse.ArgumentParser(description="Parse .dynsym section for ELF file format")
     parser.add_argument("-f", "--file",
                         help="Path to file for analysis", required=True)
+    parser.add_argument("-j", "--json-format", action="store_true",
+                        help="If set the output format would be JSON")
+    parser.add_argument("-n", "--no-output", action="store_true",
+                        help=("If set no output is printed. Used when you only want to save analysis "
+                             "to r2 project"))
     parser.add_argument("-p", "--r2-project",
                         help="If specified the analysis is saved in --r2-project for the opened file")
 
@@ -77,8 +107,24 @@ def main():
     args = get_args()
     elf_file = args.file
 
+    # TO-DO: Implement Save To Project
     e = r2p.open(elf_file)
-    print elf_dynsym(e)
+    o = elf_dynsym(e)
+
+    if not args.no_output and args.json_format:
+        print json.dumps(o)
+    elif not args.no_output:
+        # TO-DO: Fix this output into nice rows with columns
+        for i in o:
+            print "name: %s" % i["name"]
+            print "st_value: 0x%x" % i["st_value"]
+            print "st_size: 0x%x" % i["st_size"]
+            print "st_other: 0x%x" % i["st_other"]
+            print "st_shndx: 0x%x" % i["st_shndx"]
+            print "st_info: 0x%x" % i["st_info"]
+            print "st_type: %s" % i["st_type"]
+            print "st_bind: %s" % i["st_bind"]
+            print ""
 
 
 if __name__ == "__main__":
