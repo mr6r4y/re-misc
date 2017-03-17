@@ -96,6 +96,8 @@ def bytes2str(bytes):
 # |  .       skip 1 byte
 
 def struct2r2fmt(struct):
+    # TO-DO: To think how it will work with more complex examples and paddings
+    # TO-DO: This deserves a whole parsing class with recursion
     fmt_type = []
     fmt_names = []
     for f_name, f_type in struct._fields_:

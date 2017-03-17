@@ -131,6 +131,7 @@ class ElfDynsym(object):
         for s in self.symbols:
             f.write("CC Elf_Sym: '%s' @0x%x\n" % (s["name"], s["dynsym_off"] + s["offset"]))
             f.write("Cf %i %s @0x%x\n" % (self.Elf_Sym_size, self.Elf_Sym_fmt, s["dynsym_off"] + s["offset"]))
+            f.write("Cz @0x%x\n" % (s["dynstr_off"] + s["st_name"]))
 
     def save_r2_project(self, r2_script_file):
         with open(r2_script_file, 'w') as f:
