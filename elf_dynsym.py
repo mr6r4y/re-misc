@@ -51,73 +51,90 @@ SHN = {
 }
 
 
-def parse_symbols(dsm_sect_list, dss_sect, dynsym_offset, dynstr_offset):
-    symbols = []
-    for ds, offs in dsm_sect_list:
-        name = dss_sect[ds.st_name:].partition("\x00")[0]
-        symbols.append({
-            "name": name,
-            "st_name": ds.st_name,
-            "st_value": ds.st_value,
-            "st_size": ds.st_size,
-            "st_other": ds.st_other,
-            "st_shndx": ds.st_shndx,
-            "shn": SHN.get(ds.st_shndx, "?"),
-            "st_info": ds.st_info,
-
-            # mimic ELF_ST_TYPE macro
-            "st_type": ST_TYPE.get(ds.st_info & 0xf, "?"),
-
-            # mimic ELF_ST_BIND macro
-            "st_bind": ST_BIND.get(ds.st_info >> 4, "?"),
-
-            "dynsym_off": dynsym_offset,
-            "dynstr_off": dynstr_offset,
-
-            # offset of the current symbol struct from the beginning of dynsym section
-            "offset": offs
-        })
-
-    return symbols
-
-
-def elf_dynsym(r2ob):
-    # check file type
-    finfo = r2ob.cmdj('ij')
-    if finfo.get('bin', {}).get('class', None) not in ['ELF64', 'ELF32']:
-        raise NotSupportedError("File is not ELF")
-
-    e_cl = finfo.get('bin', {}).get('class', None)
-    Elf_Sym = eh.Elf64_Sym if e_cl == 'ELF64' else eh.Elf32_Sym
-
-    # list all sections
-    sections = r2ob.cmdj("Sj")
-    dsm = filter(lambda a: 'dynsym' in a['name'], sections)[0]
-
-    # get dynsym section as binary string
-    dsm_sect = u.bytes2str(r2ob.cmdj("pcj %i@%i" % (dsm['size'], dsm['paddr'])))
-
-    # cast to Elf_Sym structures
-    dsm_sect_c = c.create_string_buffer(dsm_sect)
-    dsm_sect_l = []
-    for i in range(len(dsm_sect) / c.sizeof(Elf_Sym)):
-        offset = i*c.sizeof(Elf_Sym)
-        dsm_sect_l.append((u.cast(dsm_sect_c, offset, Elf_Sym), offset))
-
-    # get dynstr section as binary string
-    dss = filter(lambda a: 'dynstr' in a['name'], sections)[0]
-    dss_sect = u.bytes2str(r2ob.cmdj("pcj %i@%i" % (dss['size'], dss['paddr'])))
-
-    return parse_symbols(dsm_sect_l, dss_sect, dsm['paddr'], dss['paddr'])
-
-
-def struct2r2fmt(struct):
-    # TO-DO: Write this to automatically extract 'fmt' for Cf? commmand in R2
-    pass
-
-
 def r2_analysis(r2ob, dt, project):
     pass
+
+
+class ElfDynsym(object):
+    def __init__(self, r2ob):
+        self.r2ob = r2ob
+        self.finfo = self.r2ob.cmdj('ij')
+        self._check_file_type(self.r2ob)
+        self.elf_class = self.finfo.get('bin', {}).get('class', None)
+        self.Elf_Sym = eh.Elf64_Sym if self.elf_class == 'ELF64' else eh.Elf32_Sym
+
+        self.Elf_Sym_fmt = u.struct2r2fmt(self.Elf_Sym)
+        self.Elf_Sym_size = c.sizeof(self.Elf_Sym)
+
+        self.symbols = None
+        self.symbols_struct_l = None
+
+        self._analyse()
+
+    def _check_file_type(self, r2ob):
+        # check file type
+        if self.finfo.get('bin', {}).get('class', None) not in ['ELF64', 'ELF32']:
+            raise NotSupportedError("File is not ELF")
+
+    def _parse_symbols(self, dsm_sect_list, dss_sect, dynsym_offset, dynstr_offset):
+        symbols = []
+        for ds, offs in dsm_sect_list:
+            name = dss_sect[ds.st_name:].partition("\x00")[0]
+            symbols.append({
+                "name": name,
+                "st_name": ds.st_name,
+                "st_value": ds.st_value,
+                "st_size": ds.st_size,
+                "st_other": ds.st_other,
+                "st_shndx": ds.st_shndx,
+                "shn": SHN.get(ds.st_shndx, "?"),
+                "st_info": ds.st_info,
+
+                # mimic ELF_ST_TYPE macro
+                "st_type": ST_TYPE.get(ds.st_info & 0xf, "?"),
+
+                # mimic ELF_ST_BIND macro
+                "st_bind": ST_BIND.get(ds.st_info >> 4, "?"),
+
+                "dynsym_off": dynsym_offset,
+                "dynstr_off": dynstr_offset,
+
+                # offset of the current symbol struct from the beginning of dynsym section
+                "offset": offs,
+            })
+
+        return symbols
+
+    def _analyse(self):
+        # list all sections
+        sections = self.r2ob.cmdj("Sj")
+        dsm = filter(lambda a: 'dynsym' in a['name'], sections)[0]
+
+        # get dynsym section as binary string
+        dsm_sect = u.bytes2str(self.r2ob.cmdj("pcj %i@%i" % (dsm['size'], dsm['paddr'])))
+
+        # cast to Elf_Sym structures
+        dsm_sect_c = c.create_string_buffer(dsm_sect)
+        dsm_sect_l = []
+        for i in range(len(dsm_sect) / c.sizeof(self.Elf_Sym)):
+            offset = i*c.sizeof(self.Elf_Sym)
+            dsm_sect_l.append((u.cast(dsm_sect_c, offset, self.Elf_Sym), offset))
+
+        # get dynstr section as binary string
+        dss = filter(lambda a: 'dynstr' in a['name'], sections)[0]
+        dss_sect = u.bytes2str(self.r2ob.cmdj("pcj %i@%i" % (dss['size'], dss['paddr'])))
+
+        self.symbols = self._parse_symbols(dsm_sect_l, dss_sect, dsm['paddr'], dss['paddr'])
+
+    def _apply_format(self, f):
+        # Due to bug in radare2 saving script projects this will is output as separate .r2 file
+        for s in self.symbols:
+            f.write("CC Elf_Sym: '%s' @0x%x\n" % (s["name"], s["dynsym_off"] + s["offset"]))
+            f.write("Cf %i %s @0x%x\n" % (self.Elf_Sym_size, self.Elf_Sym_fmt, s["dynsym_off"] + s["offset"]))
+
+    def save_r2_project(self, r2_script_file):
+        with open(r2_script_file, 'w') as f:
+            self._apply_format(f)
 
 
 def get_args():
@@ -129,8 +146,8 @@ def get_args():
     parser.add_argument("-n", "--no-output", action="store_true",
                         help=("If set no output is printed. Used when you only want to save analysis "
                               "to r2 project"))
-    parser.add_argument("-p", "--r2-project",
-                        help="If specified the analysis is saved in --r2-project for the opened file")
+    parser.add_argument("-p", "--r2-script-file",
+                        help="If specified the analysis is saved in --r2-script-file")
 
     args = parser.parse_args()
 
@@ -142,18 +159,17 @@ def main():
     elf_file = args.file
 
     e = r2p.open(elf_file)
-    o = elf_dynsym(e)
+    o = ElfDynsym(e)
 
-    if args.r2_project:
-        # TO-DO: Implement Save To Project
-        pass
+    if args.r2_script_file:
+       o.save_r2_project(args.r2_script_file)
 
     if not args.no_output and args.json_format:
-        print json.dumps(o)
+        print json.dumps(o.symbols)
     elif not args.no_output:
         h = ["name", "name_paddr", "dynsym_paddr", "st_value", "st_size", "st_other", "st_shndx", "shn", "st_info", "st_type", "st_bind"]
         t = []
-        for i in o:
+        for i in o.symbols:
             t.append([
                 "%s" % i["name"],
                 "0x%x" % (i["dynstr_off"] + i["st_name"]),
