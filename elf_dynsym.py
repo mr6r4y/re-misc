@@ -145,6 +145,7 @@ def main():
             ])
         print
         print tabulate(t, headers=h)
+        print
 
 
 if __name__ == "__main__":
