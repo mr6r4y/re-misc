@@ -51,22 +51,31 @@ SHN = {
 }
 
 
-def parse_symbols(dsm_sect_list, dss_sect):
+def parse_symbols(dsm_sect_list, dss_sect, dynsym_offset, dynstr_offset):
     symbols = []
-    for ds in dsm_sect_list:
+    for ds, offs in dsm_sect_list:
         name = dss_sect[ds.st_name:].partition("\x00")[0]
         symbols.append({
             "name": name,
+            "st_name": ds.st_name,
             "st_value": ds.st_value,
             "st_size": ds.st_size,
             "st_other": ds.st_other,
             "st_shndx": ds.st_shndx,
             "shn": SHN.get(ds.st_shndx, "?"),
             "st_info": ds.st_info,
+
             # mimic ELF_ST_TYPE macro
             "st_type": ST_TYPE.get(ds.st_info & 0xf, "?"),
+
             # mimic ELF_ST_BIND macro
-            "st_bind": ST_BIND.get(ds.st_info >> 4, "?")
+            "st_bind": ST_BIND.get(ds.st_info >> 4, "?"),
+
+            "dynsym_off": dynsym_offset,
+            "dynstr_off": dynstr_offset,
+
+            # offset of the current symbol struct from the beginning of dynsym section
+            "offset": offs
         })
 
     return symbols
@@ -92,13 +101,23 @@ def elf_dynsym(r2ob):
     dsm_sect_c = c.create_string_buffer(dsm_sect)
     dsm_sect_l = []
     for i in range(len(dsm_sect) / c.sizeof(Elf_Sym)):
-        dsm_sect_l.append(u.cast(dsm_sect_c, i*c.sizeof(Elf_Sym), Elf_Sym))
+        offset = i*c.sizeof(Elf_Sym)
+        dsm_sect_l.append((u.cast(dsm_sect_c, offset, Elf_Sym), offset))
 
     # get dynstr section as binary string
     dss = filter(lambda a: 'dynstr' in a['name'], sections)[0]
     dss_sect = u.bytes2str(r2ob.cmdj("pcj %i@%i" % (dss['size'], dss['paddr'])))
 
-    return parse_symbols(dsm_sect_l, dss_sect)
+    return parse_symbols(dsm_sect_l, dss_sect, dsm['paddr'], dss['paddr'])
+
+
+def struct2r2fmt(struct):
+    # TO-DO: Write this to automatically extract 'fmt' for Cf? commmand in R2
+    pass
+
+
+def r2_analysis(r2ob, dt, project):
+    pass
 
 
 def get_args():
@@ -109,7 +128,7 @@ def get_args():
                         help="If set the output format would be JSON")
     parser.add_argument("-n", "--no-output", action="store_true",
                         help=("If set no output is printed. Used when you only want to save analysis "
-                             "to r2 project"))
+                              "to r2 project"))
     parser.add_argument("-p", "--r2-project",
                         help="If specified the analysis is saved in --r2-project for the opened file")
 
@@ -122,18 +141,23 @@ def main():
     args = get_args()
     elf_file = args.file
 
-    # TO-DO: Implement Save To Project
     e = r2p.open(elf_file)
     o = elf_dynsym(e)
+
+    if args.r2_project:
+        # TO-DO: Implement Save To Project
+        pass
 
     if not args.no_output and args.json_format:
         print json.dumps(o)
     elif not args.no_output:
-        h = ["name", "st_value", "st_size", "st_other", "st_shndx", "shn", "st_info", "st_type", "st_bind"]
+        h = ["name", "name_paddr", "dynsym_paddr", "st_value", "st_size", "st_other", "st_shndx", "shn", "st_info", "st_type", "st_bind"]
         t = []
         for i in o:
             t.append([
                 "%s" % i["name"],
+                "0x%x" % (i["dynstr_off"] + i["st_name"]),
+                "0x%x" % (i["dynsym_off"] + i["offset"]),
                 "0x%x" % i["st_value"],
                 "0x%x" % i["st_size"],
                 "0x%x" % i["st_other"],
