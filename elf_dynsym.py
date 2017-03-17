@@ -9,6 +9,7 @@ import os
 import argparse
 
 import json
+from tabulate import tabulate
 
 import ctypes as c
 import r2pipe as r2p
@@ -128,18 +129,22 @@ def main():
     if not args.no_output and args.json_format:
         print json.dumps(o)
     elif not args.no_output:
-        # TO-DO: Fix this output into nice rows with columns
+        h = ["name", "st_value", "st_size", "st_other", "st_shndx", "shn", "st_info", "st_type", "st_bind"]
+        t = []
         for i in o:
-            print "name: %s" % i["name"]
-            print "st_value: 0x%x" % i["st_value"]
-            print "st_size: 0x%x" % i["st_size"]
-            print "st_other: 0x%x" % i["st_other"]
-            print "st_shndx: 0x%x" % i["st_shndx"]
-            print "shn: %s" % i["shn"]
-            print "st_info: 0x%x" % i["st_info"]
-            print "st_type: %s" % i["st_type"]
-            print "st_bind: %s" % i["st_bind"]
-            print ""
+            t.append([
+                "%s" % i["name"],
+                "0x%x" % i["st_value"],
+                "0x%x" % i["st_size"],
+                "0x%x" % i["st_other"],
+                "0x%x" % i["st_shndx"],
+                "%s" % i["shn"],
+                "0x%x" % i["st_info"],
+                "%s" % i["st_type"],
+                "%s" % i["st_bind"],
+            ])
+        print
+        print tabulate(t, headers=h)
 
 
 if __name__ == "__main__":
