@@ -1,0 +1,18 @@
+64bit_Confusion crack me
+
+This crackme was written in Gentoo Linux for AMD64. It is a 64 bit
+ELF executable object. 
+
+This crackme runs a series of values through its lame algorithm
+and checks your key (argv[1]) against that algorithms output.
+The values are hard coded, it shouldnt be too hard to figure out.
+The point of this crackme is to mislead you down the wrong path.
+
+- Section header remains in place
+- Anti ptrace()
+- Misleading instructions (poor obfuscation)
+
+Rules:
+NO patching :)
+
+Enjoy!
