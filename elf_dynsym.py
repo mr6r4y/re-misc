@@ -126,16 +126,16 @@ class ElfDynsym(object):
 
         self.symbols = self._parse_symbols(dsm_sect_l, dss_sect, dsm['paddr'], dss['paddr'])
 
-    def _apply_format(self, f):
-        # Due to bug in radare2 saving script projects this will is output as separate .r2 file
+    def r2_commands(self):
         for s in self.symbols:
-            f.write("CC Elf_Sym: '%s' @0x%x\n" % (s["name"], s["dynsym_off"] + s["offset"]))
-            f.write("Cf %i %s @0x%x\n" % (self.Elf_Sym_size, self.Elf_Sym_fmt, s["dynsym_off"] + s["offset"]))
-            f.write("Cz @0x%x\n" % (s["dynstr_off"] + s["st_name"]))
+            yield ("CC Elf_Sym: '%s' @0x%x" % (s["name"], s["dynsym_off"] + s["offset"]))
+            yield ("Cf %i %s @0x%x" % (self.Elf_Sym_size, self.Elf_Sym_fmt, s["dynsym_off"] + s["offset"]))
+            yield ("Cz @0x%x" % (s["dynstr_off"] + s["st_name"]))
 
     def save_r2_project(self, r2_script_file):
         with open(r2_script_file, 'w') as f:
-            self._apply_format(f)
+            for c in self.r2_commands():
+                f.write("%s\n" % c)
 
 
 def get_args():
@@ -144,6 +144,8 @@ def get_args():
                         help="Path to file for analysis", required=True)
     parser.add_argument("-j", "--json-format", action="store_true",
                         help="If set the output format would be JSON")
+    parser.add_argument("-r", "--r2-format", action="store_true",
+                        help="If set the output is in r2 commands")
     parser.add_argument("-n", "--no-output", action="store_true",
                         help=("If set no output is printed. Used when you only want to save analysis "
                               "to r2 project"))
@@ -167,6 +169,9 @@ def main():
 
     if not args.no_output and args.json_format:
         print json.dumps(o.symbols)
+    elif not args.no_output and args.r2_format:
+        for i in o.r2_commands():
+            print i
     elif not args.no_output:
         h = ["name", "name_paddr", "dynsym_paddr", "st_value", "st_size", "st_other", "st_shndx", "shn", "st_info", "st_type", "st_bind"]
         t = []
