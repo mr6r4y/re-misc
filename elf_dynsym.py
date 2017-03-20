@@ -66,7 +66,6 @@ class ElfDynsym(object):
         self.Elf_Sym_size = c.sizeof(self.Elf_Sym)
 
         self.symbols = None
-        self.symbols_struct_l = None
 
         self._analyse()
 
