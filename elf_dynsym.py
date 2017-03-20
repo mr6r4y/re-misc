@@ -50,10 +50,6 @@ SHN = {
 }
 
 
-def r2_analysis(r2ob, dt, project):
-    pass
-
-
 class ElfDynsym(object):
     def __init__(self, r2ob):
         self.r2ob = r2ob
