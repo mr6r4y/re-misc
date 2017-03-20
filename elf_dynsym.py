@@ -5,7 +5,6 @@
 __all__ = []
 
 
-import os
 import argparse
 
 import json
@@ -134,8 +133,8 @@ class ElfDynsym(object):
 
     def save_r2_project(self, r2_script_file):
         with open(r2_script_file, 'w') as f:
-            for c in self.r2_commands():
-                f.write("%s\n" % c)
+            for i in self.r2_commands():
+                f.write("%s\n" % i)
 
 
 def get_args():
@@ -165,7 +164,7 @@ def main():
     o = ElfDynsym(e)
 
     if args.r2_script_file:
-       o.save_r2_project(args.r2_script_file)
+        o.save_r2_project(args.r2_script_file)
 
     if not args.no_output and args.json_format:
         print json.dumps(o.symbols)
