@@ -15,7 +15,7 @@ import elf
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description="Parse .dynsym section for ELF file format")
+    parser = argparse.ArgumentParser(description="Parse .symtab section for ELF file format")
     parser.add_argument("-f", "--file",
                         help="Path to file for analysis", required=True)
     parser.add_argument("-j", "--json-format", action="store_true",
@@ -38,7 +38,7 @@ def main():
     elf_file = args.file
 
     e = r2p.open(elf_file)
-    o = elf.ElfSym(e, ".dynsym", ".dynstr")
+    o = elf.ElfSym(e, ".symtab", ".strtab")
 
     if args.r2_script_file:
         o.save_r2_project(args.r2_script_file)

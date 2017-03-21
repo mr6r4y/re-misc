@@ -44,19 +44,21 @@ SHN = {
 }
 
 
-class ElfDynsym(object):
-    def __init__(self, r2ob):
+class ElfSym(object):
+    def __init__(self, r2ob, sym_sect, symstr_sect):
         self.r2ob = r2ob
+        self.sym_sect = sym_sect
+        self.symstr_sect = symstr_sect
+
         self.finfo = self.r2ob.cmdj('ij')
         self._check_file_type(self.r2ob)
         self.elf_class = self.finfo.get('bin', {}).get('class', None)
         self.Elf_Sym = eh.Elf64_Sym if self.elf_class == 'ELF64' else eh.Elf32_Sym
 
         self.Elf_Sym_fmt = u.cstruct2r2fmt(self.Elf_Sym)
-        self.Elf_Sym_def = u.cstruct2td(self.Elf_Sym)
         self.Elf_Sym_size = c.sizeof(self.Elf_Sym)
 
-        self.symbols = None
+        self.symbols = []
 
         self._analyse()
 
@@ -85,8 +87,8 @@ class ElfDynsym(object):
                 # mimic ELF_ST_BIND macro
                 "st_bind": ST_BIND.get(ds.st_info >> 4, "?"),
 
-                "dynsym_off": dynsym_offset,
-                "dynstr_off": dynstr_offset,
+                "sect_off": dynsym_offset,
+                "strsect_off": dynstr_offset,
 
                 # offset of the current symbol struct from the beginning of dynsym section
                 "offset": offs,
@@ -97,36 +99,40 @@ class ElfDynsym(object):
     def _analyse(self):
         # list all sections
         sections = self.r2ob.cmdj("Sj")
-        dsm = filter(lambda a: 'dynsym' in a['name'], sections)[0]
+        sm = filter(lambda a: self.sym_sect in a['name'], sections)
+        if sm:
+            sm = sm[0]
+        else:
+            return
 
         # get dynsym section as binary string
-        dsm_sect = u.bytes2str(self.r2ob.cmdj("pcj %i@%i" % (dsm['size'], dsm['paddr'])))
+        sym_sect = u.bytes2str(self.r2ob.cmdj("pcj %i@%i" % (sm['size'], sm['paddr'])))
 
         # cast to Elf_Sym structures
-        dsm_sect_c = c.create_string_buffer(dsm_sect)
-        dsm_sect_l = []
-        for i in range(len(dsm_sect) / c.sizeof(self.Elf_Sym)):
+        symstr_sect_c = c.create_string_buffer(sym_sect)
+        symstr_sect_l = []
+        for i in range(len(sym_sect) / c.sizeof(self.Elf_Sym)):
             offset = i*c.sizeof(self.Elf_Sym)
-            dsm_sect_l.append((u.cast(dsm_sect_c, offset, self.Elf_Sym), offset))
+            symstr_sect_l.append((u.cast(symstr_sect_c, offset, self.Elf_Sym), offset))
 
         # get dynstr section as binary string
-        dss = filter(lambda a: 'dynstr' in a['name'], sections)[0]
+        dss = filter(lambda a: self.symstr_sect in a['name'], sections)[0]
         dss_sect = u.bytes2str(self.r2ob.cmdj("pcj %i@%i" % (dss['size'], dss['paddr'])))
 
-        self.symbols = self._parse_symbols(dsm_sect_l, dss_sect, dsm['paddr'], dss['paddr'])
+        self.symbols = self._parse_symbols(symstr_sect_l, dss_sect, sm['paddr'], dss['paddr'])
 
     def r2_commands(self):
-        yield "fs dynsym"
+        yield "fs %s" % self.sym_sect.strip(".")
 
         for s in self.symbols:
-            yield ("f %s 0x%x @ 0x%x" % ("sym.%s.0x%x" % (s["name"], s["dynsym_off"] + s["offset"]), self.Elf_Sym_size, s["dynsym_off"] + s["offset"]))
-            yield ("Cf %i %s @0x%x" % (self.Elf_Sym_size, self.Elf_Sym_fmt, s["dynsym_off"] + s["offset"]))
+            yield ("f %s 0x%x @ 0x%x" % ("sym.%s.0x%x" % (s["name"], s["sect_off"] + s["offset"]), self.Elf_Sym_size, s["sect_off"] + s["offset"]))
+            yield ("Cf %i %s @0x%x" % (self.Elf_Sym_size, self.Elf_Sym_fmt, s["sect_off"] + s["offset"]))
 
-        yield "fs dynstr"
+        yield "fs %s" % self.symstr_sect.strip(".")
 
         for s in self.symbols:
-            yield ("f %s @ 0x%x" % ("str.%s.0x%x" % (s["name"], s["dynstr_off"] + s["st_name"]), s["dynstr_off"] + s["st_name"]))
-            yield ("Cz @0x%x" % (s["dynstr_off"] + s["st_name"]))
+            yield ("f %s @ 0x%x" % ("str.%s.0x%x" % (s["name"], s["strsect_off"] + s["st_name"]), s["strsect_off"] + s["st_name"]))
+            yield ("Cz @0x%x" % (s["strsect_off"] + s["st_name"]))
 
     def save_r2_project(self, r2_script_file):
         with open(r2_script_file, 'w') as f:
