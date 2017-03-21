@@ -116,11 +116,6 @@ class ElfDynsym(object):
         self.symbols = self._parse_symbols(dsm_sect_l, dss_sect, dsm['paddr'], dss['paddr'])
 
     def r2_commands(self):
-        if self.elf_class == 'ELF64':
-            yield "pfo elf64"
-        else:
-            yield "pfo elf32"
-
         yield "fs dynsym"
 
         for s in self.symbols:
