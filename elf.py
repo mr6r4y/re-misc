@@ -52,7 +52,8 @@ class ElfDynsym(object):
         self.elf_class = self.finfo.get('bin', {}).get('class', None)
         self.Elf_Sym = eh.Elf64_Sym if self.elf_class == 'ELF64' else eh.Elf32_Sym
 
-        self.Elf_Sym_fmt = u.struct2r2fmt(self.Elf_Sym)
+        self.Elf_Sym_fmt = u.cstruct2r2fmt(self.Elf_Sym)
+        self.Elf_Sym_def = '" td %s;"' % (u.cstruct2td(self.Elf_Sym))
         self.Elf_Sym_size = c.sizeof(self.Elf_Sym)
 
         self.symbols = None
@@ -115,9 +116,21 @@ class ElfDynsym(object):
         self.symbols = self._parse_symbols(dsm_sect_l, dss_sect, dsm['paddr'], dss['paddr'])
 
     def r2_commands(self):
+        if self.elf_class == 'ELF64':
+            yield "pfo elf64"
+        else:
+            yield "pfo elf32"
+
+        yield "fs dynsym"
+
         for s in self.symbols:
-            yield ("CC Elf_Sym: '%s' @0x%x" % (s["name"], s["dynsym_off"] + s["offset"]))
+            yield ("f %s 0x%x @ 0x%x" % ("sym.%s.0x%x" % (s["name"], s["dynsym_off"] + s["offset"]), self.Elf_Sym_size, s["dynsym_off"] + s["offset"]))
             yield ("Cf %i %s @0x%x" % (self.Elf_Sym_size, self.Elf_Sym_fmt, s["dynsym_off"] + s["offset"]))
+
+        yield "fs dynstr"
+
+        for s in self.symbols:
+            yield ("f %s @ 0x%x" % ("str.%s.0x%x" % (s["name"], s["dynstr_off"] + s["st_name"]), s["dynstr_off"] + s["st_name"]))
             yield ("Cz @0x%x" % (s["dynstr_off"] + s["st_name"]))
 
     def save_r2_project(self, r2_script_file):

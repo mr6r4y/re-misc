@@ -62,6 +62,10 @@ def bytes2str(bytes):
     return "".join([chr(i) for i in bytes])
 
 
+class NoSupportedType(StandardError):
+    pass
+
+
 # |pf: pf[.k[.f[=v]]|[v]]|[n]|[0|cnt][fmt] [a0 a1 ...]
 # | Format:
 # |  b       byte (unsigned)
@@ -95,7 +99,7 @@ def bytes2str(bytes):
 # |  :       skip 4 bytes
 # |  .       skip 1 byte
 
-def struct2r2fmt(struct):
+def cstruct2r2fmt(struct):
     # TO-DO: To think how it will work with more complex examples and paddings
     # TO-DO: This deserves a whole parsing class with recursion
     fmt_type = []
@@ -157,3 +161,88 @@ def struct2r2fmt(struct):
             fmt_type.append('b')
         fmt_names.append(f_name)
     return "%s %s" % ("".join(fmt_type), " ".join(fmt_names))
+
+
+## R2 Types
+##-------------
+## char
+## char *
+## int
+## int16_t
+## int32_t
+## int64_t
+## int8_t
+## long
+## long long
+## short
+## size_t
+## uid_t
+## uint16_t
+## uint32_t
+## uint64_t
+## uint8_t
+## unsigned char
+## unsigned int
+## unsigned short
+## void *
+def cstruct2td(struct):
+    types = []
+    for f_name, f_type in struct._fields_:
+        if f_type in [c.c_byte]:
+            t = 'char'
+        elif f_type in [c.c_char]:
+            t = 'char'
+        elif f_type in [c.c_char_p]:
+            t = 'char *'
+        elif f_type in [c.c_double]:
+            t = 'uint64_t'
+        elif f_type in [c.c_longdouble]:
+            raise NoSupportedType('Type %s is not supported' % str(f_type))
+        elif f_type in [c.c_float]:
+            t = 'uint32_t'
+        elif f_type in [c.c_int]:
+            t = 'int'
+        elif f_type in [c.c_int8]:
+            t = 'int8_t'
+        elif f_type in [c.c_int16]:
+            t = 'int16_t'
+        elif f_type in [c.c_int32]:
+            t = 'int32_t'
+        elif f_type in [c.c_int64]:
+            t = 'int64_t'
+        elif f_type in [c.c_long]:
+            t = 'long'
+        elif f_type in [c.c_longlong]:
+            t = 'long long'
+        elif f_type in [c.c_short]:
+            t = 'short'
+        elif f_type in [c.c_ubyte]:
+            t = 'unsigned char'
+        elif f_type in [c.c_uint]:
+            t = 'unsigned int'
+        elif f_type in [c.c_uint8]:
+            t = 'uint8_t'
+        elif f_type in [c.c_uint16]:
+            t = 'uint16_t'
+        elif f_type in [c.c_uint32]:
+            t = 'uint32_t'
+        elif f_type in [c.c_uint64]:
+            t = 'uint64_t'
+        elif f_type in [c.c_ulong]:
+            t = 'uint32_t'
+        elif f_type in [c.c_ulonglong]:
+            t = 'uint64_t'
+        elif f_type in [c.c_ushort]:
+            t = 'unsigned short'
+        elif f_type in [c.c_void_p]:
+            t = 'void *'
+        elif f_type in [c.c_wchar]:
+            t = ''
+        elif f_type in [c.c_wchar_p]:
+            t = 'void *'
+        elif f_type in [c.c_bool]:
+            t = 'char'
+        else:
+            raise NoSupportedType('Type %s is not supported' % str(f_type))
+        types.append("%s %s" % (t, f_name))
+    return "struct %s {%s}" % (struct().__class__.__name__, ";".join(types))
