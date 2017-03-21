@@ -245,4 +245,4 @@ def cstruct2td(struct):
         else:
             raise NoSupportedType('Type %s is not supported' % str(f_type))
         types.append("%s %s" % (t, f_name))
-    return "struct %s {%s}" % (struct().__class__.__name__, ";".join(types))
+    return '" td struct %s {%s};"' % (struct().__class__.__name__, ";".join(types))

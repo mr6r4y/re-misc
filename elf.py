@@ -53,7 +53,7 @@ class ElfDynsym(object):
         self.Elf_Sym = eh.Elf64_Sym if self.elf_class == 'ELF64' else eh.Elf32_Sym
 
         self.Elf_Sym_fmt = u.cstruct2r2fmt(self.Elf_Sym)
-        self.Elf_Sym_def = '" td %s;"' % (u.cstruct2td(self.Elf_Sym))
+        self.Elf_Sym_def = u.cstruct2td(self.Elf_Sym)
         self.Elf_Sym_size = c.sizeof(self.Elf_Sym)
 
         self.symbols = None
