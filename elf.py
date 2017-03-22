@@ -45,10 +45,12 @@ SHN = {
 
 
 class ElfSym(object):
-    def __init__(self, r2ob, sym_sect, symstr_sect):
+    def __init__(self, r2ob, sym_sect, symstr_sect, use_vaddr=False):
         self.r2ob = r2ob
         self.sym_sect = sym_sect
         self.symstr_sect = symstr_sect
+        self.addr_type = 'paddr' if not use_vaddr else 'vaddr'
+        self.size_type = 'size' if not use_vaddr else 'vsize'
 
         self.finfo = self.r2ob.cmdj('ij')
         self._check_file_type(self.r2ob)
@@ -67,7 +69,7 @@ class ElfSym(object):
         if self.finfo.get('bin', {}).get('class', None) not in ['ELF64', 'ELF32']:
             raise NotSupportedError("File is not ELF")
 
-    def _parse_symbols(self, dsm_sect_list, dss_sect, dynsym_offset, dynstr_offset):
+    def _parse_symbols(self, dsm_sect_list, dss_sect, sym_offset, symstr_offset):
         symbols = []
         for ds, offs in dsm_sect_list:
             name = dss_sect[ds.st_name:].partition("\x00")[0]
@@ -87,8 +89,8 @@ class ElfSym(object):
                 # mimic ELF_ST_BIND macro
                 "st_bind": ST_BIND.get(ds.st_info >> 4, "?"),
 
-                "sect_off": dynsym_offset,
-                "strsect_off": dynstr_offset,
+                "sect_off": sym_offset,
+                "strsect_off": symstr_offset,
 
                 # offset of the current symbol struct from the beginning of dynsym section
                 "offset": offs,
@@ -106,7 +108,7 @@ class ElfSym(object):
             return
 
         # get dynsym section as binary string
-        sym_sect = u.bytes2str(self.r2ob.cmdj("pcj %i@%i" % (sm['size'], sm['paddr'])))
+        sym_sect = u.bytes2str(self.r2ob.cmdj("pcj %i@%i" % (sm[self.size_type], sm[self.addr_type])))
 
         # cast to Elf_Sym structures
         symstr_sect_c = c.create_string_buffer(sym_sect)
@@ -116,10 +118,10 @@ class ElfSym(object):
             symstr_sect_l.append((u.cast(symstr_sect_c, offset, self.Elf_Sym), offset))
 
         # get dynstr section as binary string
-        dss = filter(lambda a: self.symstr_sect in a['name'], sections)[0]
-        dss_sect = u.bytes2str(self.r2ob.cmdj("pcj %i@%i" % (dss['size'], dss['paddr'])))
+        ss = filter(lambda a: self.symstr_sect in a['name'], sections)[0]
+        ss_sect = u.bytes2str(self.r2ob.cmdj("pcj %i@%i" % (ss[self.size_type], ss[self.addr_type])))
 
-        self.symbols = self._parse_symbols(symstr_sect_l, dss_sect, sm['paddr'], dss['paddr'])
+        self.symbols = self._parse_symbols(symstr_sect_l, ss_sect, sm[self.addr_type], ss[self.addr_type])
 
     def r2_commands(self):
         yield "fs %s" % self.sym_sect.strip(".")
