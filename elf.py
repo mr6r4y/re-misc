@@ -136,6 +136,10 @@ class ElfSym(object):
             yield ("f %s @ 0x%x" % ("str.%s.0x%x" % (s["name"], s["strsect_off"] + s["st_name"]), s["strsect_off"] + s["st_name"]))
             yield ("Cz @0x%x" % (s["strsect_off"] + s["st_name"]))
 
+    def exec_r2_commands(self):
+        for i in self.r2_commands():
+            self.r2ob.cmd(i)
+
     def save_r2_project(self, r2_script_file):
         with open(r2_script_file, 'w') as f:
             for i in self.r2_commands():
