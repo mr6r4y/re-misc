@@ -19,8 +19,10 @@ def get_args():
     parser = argparse.ArgumentParser(description="Parse .dynsym section for ELF file format")
     parser.add_argument("-f", "--file",
                         help="Path to file for analysis")
-    parser.add_argument("-a", "--use-vaddr", action="store_true",
+    parser.add_argument("-v", "--use-vaddr", action="store_true",
                         help="If set, the vaddr instead of paddr is used")
+    parser.add_argument("-a", "--analysis", action="store_true",
+                        help="If set and used with #!pipe, the analysis commands are run from within the script")
     parser.add_argument("-j", "--json-format", action="store_true",
                         help="If set the output format would be JSON")
     parser.add_argument("-r", "--r2-format", action="store_true",
@@ -38,14 +40,16 @@ def get_args():
 
 def main():
     args = get_args()
+
     if args.file:
         e = r2p.open(args.file)
-        o = elf.ElfSym(e, ".dynsym", ".dynstr")
     else:
         e = r2p.open()
-        o = elf.ElfSym(e, ".dynsym", ".dynstr", use_vaddr=args.use_vaddr)
+
+    o = elf.ElfSym(e, ".dynsym", ".dynstr", use_vaddr=args.use_vaddr)
+
+    if not args.file and args.analysis:
         o.exec_r2_commands()
-        sys.exit()
 
     if args.r2_script_file:
         o.save_r2_project(args.r2_script_file)

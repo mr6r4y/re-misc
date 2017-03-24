@@ -246,3 +246,7 @@ def cstruct2td(struct):
             raise NoSupportedType('Type %s is not supported' % str(f_type))
         types.append("%s %s" % (t, f_name))
     return '" td struct %s {%s};"' % (struct().__class__.__name__, ";".join(types))
+
+
+def enum2td(enum_name, enum_dict):
+    return '"td enum %s {%s};"' % (enum_name, ", ".join(["%s=0x%x" % (k, v) for v, k in enum_dict.items()]))

@@ -57,7 +57,10 @@ class ElfSym(object):
         self.elf_class = self.finfo.get('bin', {}).get('class', None)
         self.Elf_Sym = eh.Elf64_Sym if self.elf_class == 'ELF64' else eh.Elf32_Sym
 
-        self.Elf_Sym_fmt = u.cstruct2r2fmt(self.Elf_Sym)
+        self.Elf_Sym_fmt = "xbb[2]Eqq st_name st_info st_other (elf_shn)st_shndx st_value st_size"\
+                           if self.elf_class == 'ELF64' else\
+                           "xxxbb[2]E st_name st_value st_size st_info st_other (elf_shn)st_shndx"
+        self.Elf_Sym_shn_enum_td = u.enum2td("elf_shn", SHN)
         self.Elf_Sym_size = c.sizeof(self.Elf_Sym)
 
         self.symbols = []
@@ -124,6 +127,10 @@ class ElfSym(object):
         self.symbols = self._parse_symbols(symstr_sect_l, ss_sect, sm[self.addr_type], ss[self.addr_type])
 
     def r2_commands(self):
+        yield self.Elf_Sym_shn_enum_td
+
+        yield "pf.Elf_Sym %s" % self.Elf_Sym_fmt
+
         yield "fs %s" % self.sym_sect.strip(".")
 
         for s in self.symbols:

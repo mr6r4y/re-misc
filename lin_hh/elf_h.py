@@ -109,6 +109,58 @@ STT_COMMON = 5
 STT_TLS = 6
 
 
+# typedef struct elf32_rel {
+#   Elf32_Addr    r_offset;
+#   Elf32_Word    r_info;
+# } Elf32_Rel;
+
+class Elf32_Rel(c.Structure):
+    _fields_ = [
+        ("r_offset", Elf32_Addr),
+        ("r_info", Elf64_Xword)
+    ]
+
+
+# typedef struct elf64_rel {
+#   Elf64_Addr r_offset;  /* Location at which to apply the action */
+#   Elf64_Xword r_info;   /* index and type of relocation */
+# } Elf64_Rel;
+
+class Elf64_Rel(c.Structure):
+    _fields_ = [
+        ("r_offset", Elf64_Addr),
+        ("r_info", Elf64_Word)
+    ]
+
+
+# typedef struct elf32_rela{
+#   Elf32_Addr    r_offset;
+#   Elf32_Word    r_info;
+#   Elf32_Sword   r_addend;
+# } Elf32_Rela;
+
+class Elf32_Rela(c.Structure):
+    _fields_ = [
+        ("r_offset", Elf32_Addr),
+        ("r_info", Elf32_Word),
+        ("r_addend", Elf32_Sword)
+    ]
+
+
+# typedef struct elf64_rela {
+#   Elf64_Addr r_offset;  /* Location at which to apply the action */
+#   Elf64_Xword r_info;   /* index and type of relocation */
+#   Elf64_Sxword r_addend;    /* Constant addend used to compute value */
+# } Elf64_Rela;
+
+class Elf64_Rela(c.Structure):
+    _fields_ = [
+        ("r_offset", Elf64_Addr),
+        ("r_info", Elf64_Xword),
+        ("r_addend", Elf64_Sxword)
+    ]
+
+
 # typedef struct elf32_sym{
 #   Elf32_Word    st_name;
 #   Elf32_Addr    st_value;
