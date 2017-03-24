@@ -3,21 +3,36 @@
 
 
 __all__ = [
-    "iterate_till_null",
-    "interpret_char_p",
-    "cast",
-    "cast_to_pointer",
-    "get_offset",
-    "bytes2str",
-    "CastError",
+
 ]
 
 
+import abc
 import ctypes as c
 
 
 class CastError(StandardError):
     pass
+
+
+class R2Scriptable(object):
+    __metaclass__ = abc.ABCMeta
+
+    def __init__(self, r2ob):
+        self.r2ob = r2ob
+
+    @abc.abstractmethod
+    def r2_commands(self):
+        yield "# Override me"
+
+    def exec_r2_commands(self):
+        for i in self.r2_commands():
+            self.r2ob.cmd(i)
+
+    def save_r2_project(self, r2_script_file):
+        with open(r2_script_file, 'w') as f:
+            for i in self.r2_commands():
+                f.write("%s\n" % i)
 
 
 def iterate_till_null(c_buffer, offset, size):

@@ -44,9 +44,10 @@ SHN = {
 }
 
 
-class ElfSym(object):
+class ElfSym(u.R2Scriptable):
     def __init__(self, r2ob, sym_sect, symstr_sect, use_vaddr=False):
-        self.r2ob = r2ob
+        super(ElfSym, self).__init__(r2ob)
+
         self.sym_sect = sym_sect
         self.symstr_sect = symstr_sect
         self.addr_type = 'paddr' if not use_vaddr else 'vaddr'
@@ -142,12 +143,3 @@ class ElfSym(object):
         for s in self.symbols:
             yield ("f %s @ 0x%x" % ("str.%s.0x%x" % (s["name"], s["strsect_off"] + s["st_name"]), s["strsect_off"] + s["st_name"]))
             yield ("Cz @0x%x" % (s["strsect_off"] + s["st_name"]))
-
-    def exec_r2_commands(self):
-        for i in self.r2_commands():
-            self.r2ob.cmd(i)
-
-    def save_r2_project(self, r2_script_file):
-        with open(r2_script_file, 'w') as f:
-            for i in self.r2_commands():
-                f.write("%s\n" % i)
