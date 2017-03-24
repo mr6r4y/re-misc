@@ -143,3 +143,19 @@ class ElfSym(u.R2Scriptable):
         for s in self.symbols:
             yield ("f %s @ 0x%x" % ("str.%s.0x%x" % (s["name"], s["strsect_off"] + s["st_name"]), s["strsect_off"] + s["st_name"]))
             yield ("Cz @0x%x" % (s["strsect_off"] + s["st_name"]))
+
+
+class ElfRel(u.R2Scriptable):
+    def __init__(self, r2ob):
+        super(ElfRel, self).__init__(r2ob)
+
+    def r2_commands(self):
+        pass
+
+
+class ElfDynamic(u.R2Scriptable):
+    def __init__(self, r2ob):
+        super(ElfDynamic, self).__init__(r2ob)
+
+    def r2_commands(self):
+        pass
