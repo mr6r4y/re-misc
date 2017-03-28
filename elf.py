@@ -145,6 +145,14 @@ class ElfSym(u.R2Scriptable):
             yield ("Cz @0x%x" % (s["strsect_off"] + s["st_name"]))
 
 
+class ElfPhdr(u.R2Scriptable):
+    def __init__(self, r2ob):
+        super(ElfPhdr, self).__init__(r2ob)
+
+    def r2_commands(self):
+        pass
+
+
 class ElfRel(u.R2Scriptable):
     def __init__(self, r2ob):
         super(ElfRel, self).__init__(r2ob)
