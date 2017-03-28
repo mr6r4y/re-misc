@@ -1,7 +1,7 @@
 #!/bin/bash
 
 gcc -o empty_main empty_main.c
-gcc -fPIC -o empty_main_pic empty_main.c
+gcc -fpic -o empty_main_pic empty_main.c
 gcc -ggdb -o empty_main_gdb empty_main.c
 # gcc -nodefaultlibs bempty_main_nodefaultlibs empty_main.c
 
