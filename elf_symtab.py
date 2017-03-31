@@ -1,11 +1,6 @@
 #!/usr/bin/env python
-#-*- coding: utf-8 -*
 
 
-__all__ = []
-
-
-import sys
 import argparse
 
 import json
@@ -13,6 +8,9 @@ from tabulate import tabulate
 
 import r2pipe as r2p
 import elf
+
+
+__all__ = []
 
 
 def get_args():
