@@ -187,12 +187,29 @@ STT_FILE = 4
 STT_COMMON = 5
 STT_TLS = 6
 
-# #define ELF_ST_BIND(x)      ((x) >> 4)
-# #define ELF_ST_TYPE(x)      (((unsigned int) x) & 0xf)
-# #define ELF32_ST_BIND(x)    ELF_ST_BIND(x)
-# #define ELF32_ST_TYPE(x)    ELF_ST_TYPE(x)
-# #define ELF64_ST_BIND(x)    ELF_ST_BIND(x)
-# #define ELF64_ST_TYPE(x)    ELF_ST_TYPE(x)
+
+def ELF_ST_BIND(x):
+    return x >> 4
+
+
+def ELF_ST_TYPE(x):
+    return x & 0xf
+
+
+def ELF32_ST_BIND(x):
+    return ELF_ST_BIND(x)
+
+
+def ELF32_ST_TYPE(x):
+    return ELF_ST_TYPE(x)
+
+
+def ELF64_ST_BIND(x):
+    return ELF_ST_BIND(x)
+
+
+def ELF64_ST_TYPE(x):
+    return ELF_ST_TYPE(x)
 
 
 class Elf32_Dyn(c.Structure):
@@ -220,12 +237,23 @@ class Elf64_Dyn(c.Structure):
         ("d_un", _d_un),
     ]
 
-## /* The following are used with relocations */
-## #define ELF32_R_SYM(x) ((x) >> 8)
-## #define ELF32_R_TYPE(x) ((x) & 0xff)
-##
+
+## The following are used with relocations
+def ELF32_R_SYM(x):
+    return x >> 8
+
+
+def ELF32_R_TYPE(x):
+    return x & 0xff
+
+
 ## #define ELF64_R_SYM(i)          ((i) >> 32)
-## #define ELF64_R_TYPE(i)         ((i) & 0xffffffff)
+def ELF64_R_SYM(i):
+    return i >> 32
+
+
+def ELF64_R_TYPE(i):
+    return i & 0xffffffff
 
 
 class Elf32_Rel(c.Structure):
