@@ -15,6 +15,122 @@ class NotSupportedError(StandardError):
     pass
 
 
+EM = {
+    eh.EM_NONE: "EM_NONE",
+    eh.EM_M32: "EM_M32",
+    eh.EM_SPARC: "EM_SPARC",
+    eh.EM_386: "EM_386",
+    eh.EM_68K: "EM_68K",
+    eh.EM_88K: "EM_88K",
+    eh.EM_486: "EM_486",
+    eh.EM_860: "EM_860",
+    eh.EM_MIPS: "EM_MIPS",
+    eh.EM_MIPS_RS3_LE: "EM_MIPS_RS3_LE",
+    eh.EM_MIPS_RS4_BE: "EM_MIPS_RS4_BE",
+    eh.EM_PARISC: "EM_PARISC",
+    eh.EM_SPARC32PLUS: "EM_SPARC32PLUS",
+    eh.EM_PPC: "EM_PPC",
+    eh.EM_PPC64: "EM_PPC64",
+    eh.EM_SPU: "EM_SPU",
+    eh.EM_ARM: "EM_ARM",
+    eh.EM_SH: "EM_SH",
+    eh.EM_SPARCV9: "EM_SPARCV9",
+    eh.EM_IA_64: "EM_IA_64",
+    eh.EM_X86_64: "EM_X86_64",
+    eh.EM_S390: "EM_S390",
+    eh.EM_CRIS: "EM_CRIS",
+    eh.EM_V850: "EM_V850",
+    eh.EM_M32R: "EM_M32R",
+    eh.EM_MN10300: "EM_MN10300",
+    eh.EM_BLACKFIN: "EM_BLACKFIN",
+    eh.EM_TI_C6000: "EM_TI_C6000",
+    eh.EM_AARCH64: "EM_AARCH64",
+    eh.EM_FRV: "EM_FRV",
+    eh.EM_AVR32: "EM_AVR32",
+    eh.EM_ALPHA: "EM_ALPHA",
+    eh.EM_CYGNUS_V850: "EM_CYGNUS_V850",
+    eh.EM_CYGNUS_M32R: "EM_CYGNUS_M32R",
+    eh.EM_S390_OLD: "EM_S390_OLD",
+    eh.EM_CYGNUS_MN10300: "EM_CYGNUS_MN10300",
+}
+
+
+PT = {
+    eh.PT_NULL: "PT_NULL",
+    eh.PT_LOAD: "PT_LOAD",
+    eh.PT_DYNAMIC: "PT_DYNAMIC",
+    eh.PT_INTERP: "PT_INTERP",
+    eh.PT_NOTE: "PT_NOTE",
+    eh.PT_SHLIB: "PT_SHLIB",
+    eh.PT_PHDR: "PT_PHDR",
+    eh.PT_TLS: "PT_TLS",
+    eh.PT_LOOS: "PT_LOOS",
+    eh.PT_HIOS: "PT_HIOS",
+    eh.PT_LOPROC: "PT_LOPROC",
+    eh.PT_HIPROC: "PT_HIPROC",
+    eh.PT_GNU_EH_FRAME: "PT_GNU_EH_FRAME",
+    eh.PT_GNU_STACK: "PT_GNU_STACK",
+}
+
+
+ET = {
+    eh.ET_NONE: "ET_NONE",
+    eh.ET_REL: "ET_REL",
+    eh.ET_EXEC: "ET_EXEC",
+    eh.ET_DYN: "ET_DYN",
+    eh.ET_CORE: "ET_CORE",
+    eh.ET_LOPROC: "ET_LOPROC",
+    eh.ET_HIPROC: "ET_HIPROC",
+}
+
+
+DT = {
+    eh.DT_NULL: "DT_NULL",
+    eh.DT_NEEDED: "DT_NEEDED",
+    eh.DT_PLTRELSZ: "DT_PLTRELSZ",
+    eh.DT_PLTGOT: "DT_PLTGOT",
+    eh.DT_HASH: "DT_HASH",
+    eh.DT_STRTAB: "DT_STRTAB",
+    eh.DT_SYMTAB: "DT_SYMTAB",
+    eh.DT_RELA: "DT_RELA",
+    eh.DT_RELASZ: "DT_RELASZ",
+    eh.DT_RELAENT: "DT_RELAENT",
+    eh.DT_STRSZ: "DT_STRSZ",
+    eh.DT_SYMENT: "DT_SYMENT",
+    eh.DT_INIT: "DT_INIT",
+    eh.DT_FINI: "DT_FINI",
+    eh.DT_SONAME: "DT_SONAME",
+    eh.DT_RPATH: "DT_RPATH",
+    eh.DT_SYMBOLIC: "DT_SYMBOLIC",
+    eh.DT_REL: "DT_REL",
+    eh.DT_RELSZ: "DT_RELSZ",
+    eh.DT_RELENT: "DT_RELENT",
+    eh.DT_PLTREL: "DT_PLTREL",
+    eh.DT_DEBUG: "DT_DEBUG",
+    eh.DT_TEXTREL: "DT_TEXTREL",
+    eh.DT_JMPREL: "DT_JMPREL",
+    eh.DT_ENCODING: "DT_ENCODING",
+    eh.OLD_DT_LOOS: "OLD_DT_LOOS",
+    eh.DT_LOOS: "DT_LOOS",
+    eh.DT_HIOS: "DT_HIOS",
+    eh.DT_VALRNGLO: "DT_VALRNGLO",
+    eh.DT_VALRNGHI: "DT_VALRNGHI",
+    eh.DT_ADDRRNGLO: "DT_ADDRRNGLO",
+    eh.DT_ADDRRNGHI: "DT_ADDRRNGHI",
+    eh.DT_VERSYM: "DT_VERSYM",
+    eh.DT_RELACOUNT: "DT_RELACOUNT",
+    eh.DT_RELCOUNT: "DT_RELCOUNT",
+    eh.DT_FLAGS_1: "DT_FLAGS_1",
+    eh.DT_VERDEF: "DT_VERDEF",
+    eh.DT_VERDEFNUM: "DT_VERDEFNUM",
+    eh.DT_VERNEED: "DT_VERNEED",
+    eh.DT_VERNEEDNUM: "DT_VERNEEDNUM",
+    eh.OLD_DT_HIOS: "OLD_DT_HIOS",
+    eh.DT_LOPROC: "DT_LOPROC",
+    eh.DT_HIPROC: "DT_HIPROC",
+}
+
+
 ST_TYPE = {
     eh.STT_NOTYPE: "STT_NOTYPE",
     eh.STT_OBJECT: "STT_OBJECT",
@@ -33,6 +149,42 @@ ST_BIND = {
 }
 
 
+PF = {
+    eh.PF_R: "PF_R",
+    eh.PF_W: "PF_W",
+    eh.PF_X: "PF_X",
+}
+
+
+SHT = {
+    eh.SHT_NULL: "SHT_NULL",
+    eh.SHT_PROGBITS: "SHT_PROGBITS",
+    eh.SHT_SYMTAB: "SHT_SYMTAB",
+    eh.SHT_STRTAB: "SHT_STRTAB",
+    eh.SHT_RELA: "SHT_RELA",
+    eh.SHT_HASH: "SHT_HASH",
+    eh.SHT_DYNAMIC: "SHT_DYNAMIC",
+    eh.SHT_NOTE: "SHT_NOTE",
+    eh.SHT_NOBITS: "SHT_NOBITS",
+    eh.SHT_REL: "SHT_REL",
+    eh.SHT_SHLIB: "SHT_SHLIB",
+    eh.SHT_DYNSYM: "SHT_DYNSYM",
+    eh.SHT_NUM: "SHT_NUM",
+    eh.SHT_LOPROC: "SHT_LOPROC",
+    eh.SHT_HIPROC: "SHT_HIPROC",
+    eh.SHT_LOUSER: "SHT_LOUSER",
+    eh.SHT_HIUSER: "SHT_HIUSER",
+}
+
+
+SHF = {
+    eh.SHF_WRITE: "SHF_WRITE",
+    eh.SHF_ALLOC: "SHF_ALLOC",
+    eh.SHF_EXECINSTR: "SHF_EXECINSTR",
+    eh.SHF_MASKPROC: "SHF_MASKPROC",
+}
+
+
 SHN = {
     eh.SHN_UNDEF: "SHN_UNDEF",
     eh.SHN_LORESERVE: "SHN_LORESERVE",
@@ -41,6 +193,28 @@ SHN = {
     eh.SHN_ABS: "SHN_ABS",
     eh.SHN_COMMON: "SHN_COMMON",
     eh.SHN_HIRESERVE: "SHN_HIRESERVE"
+}
+
+
+ELFCLASS = {
+    eh.ELFCLASSNONE: "ELFCLASSNONE",
+    eh.ELFCLASS32: "ELFCLASS32",
+    eh.ELFCLASS64: "ELFCLASS64",
+    eh.ELFCLASSNUM: "ELFCLASSNUM",
+}
+
+
+ELFDATA = {
+    eh.ELFDATANONE: "ELFDATANONE",
+    eh.ELFDATA2LSB: "ELFDATA2LSB",
+    eh.ELFDATA2MSB: "ELFDATA2MSB",
+}
+
+
+EV = {
+    eh.EV_NONE: "EV_NONE",
+    eh.EV_CURRENT: "EV_CURRENT",
+    eh.EV_NUM: "EV_NUM",
 }
 
 
