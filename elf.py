@@ -1,14 +1,12 @@
-#!/usr/bin/env python
-#-*- coding: utf-8 -*
-
-
-__all__ = []
 
 
 import ctypes as c
 
 import lin_hh.elf_h as eh
 import utils as u
+
+
+__all__ = []
 
 
 class NotSupportedError(StandardError):
@@ -292,7 +290,7 @@ class ElfSym(u.R2Scriptable):
         symstr_sect_c = c.create_string_buffer(sym_sect)
         symstr_sect_l = []
         for i in range(len(sym_sect) / c.sizeof(self.Elf_Sym)):
-            offset = i*c.sizeof(self.Elf_Sym)
+            offset = i * c.sizeof(self.Elf_Sym)
             symstr_sect_l.append((u.cast(symstr_sect_c, offset, self.Elf_Sym), offset))
 
         # get dynstr section as binary string
@@ -309,14 +307,77 @@ class ElfSym(u.R2Scriptable):
         yield "fs %s" % self.sym_sect.strip(".")
 
         for s in self.symbols:
-            yield ("f %s 0x%x @ 0x%x" % ("sym.%s.0x%x" % (s["name"], s["sect_off"] + s["offset"]), self.Elf_Sym_size, s["sect_off"] + s["offset"]))
+            yield ("f %s 0x%x @ 0x%x" % ("sym.%s.0x%x" % (s["name"], s["sect_off"] + s["offset"]),
+                                         self.Elf_Sym_size, s["sect_off"] + s["offset"]))
             yield ("Cf %i %s @0x%x" % (self.Elf_Sym_size, self.Elf_Sym_fmt, s["sect_off"] + s["offset"]))
 
         yield "fs %s" % self.symstr_sect.strip(".")
 
         for s in self.symbols:
-            yield ("f %s @ 0x%x" % ("str.%s.0x%x" % (s["name"], s["strsect_off"] + s["st_name"]), s["strsect_off"] + s["st_name"]))
+            yield ("f %s @ 0x%x" % ("str.%s.0x%x" % (s["name"], s["strsect_off"] + s["st_name"]),
+                                    s["strsect_off"] + s["st_name"]))
             yield ("Cz @0x%x" % (s["strsect_off"] + s["st_name"]))
+
+
+class ElfEhdr(u.R2Scriptable):
+    def __init__(self, r2ob, start_offset):
+        super(ElfEhdr, self).__init__(r2ob)
+        self.start_offset = start_offset
+        self.elf_class = self._get_elf_class()
+
+        if self.elf_class not in (eh.ELFCLASS32, eh.ELFCLASS64):
+            raise NotSupportedError("Not Elf32 or Elf64")
+
+        self.Elf_Ehdr = eh.Elf32_Ehdr if self.elf_class == eh.ELFCLASS32 else eh.Elf64_Ehdr
+        self.Elf_Ehdr_size = c.sizeof(self.Elf_Ehdr)
+        self.end_offset = self.start_offset + self.Elf_Ehdr_size
+
+        self.Elf_Ehdr_fmt = ("[16]c[2]E[2]Exxxxxwwwwww "
+                             "e_ident (elf_class)e_type (elf_machine)e_machine e_version e_entry "
+                             "e_phoff e_shoff e_flags e_ehsize e_phentsize "
+                             "e_phnum e_shentsize e_shnum e_shstrndx") if self.elf_class == eh.ELFCLASS32 else\
+                            ("[16]c[2]E[2]Exqqqxwwwwww "
+                             "e_ident (elf_class)e_type (elf_machine)e_machine e_version e_entry "
+                             "e_phoff e_shoff e_flags e_ehsize e_phentsize "
+                             "e_phnum e_shentsize e_shnum e_shstrndx")
+        self.Elf_Ehdr_machine_enum_td = u.enum2td("elf_machine", EM)
+        self.Elf_Ehdr_type_enum_td = u.enum2td("elf_class", ELFCLASS)
+
+        self._analyse()
+
+    def _get_elf_class(self):
+        self.r2ob.cmd("s %i" % self.start_offset)
+        a = self.r2ob.cmdj("pfj N2 @ %i"
+                           % (self.start_offset + c.sizeof(c.c_ubyte * eh.EI_NIDENT)))
+        return a[0]["value"]
+
+    def _analyse(self):
+        elf_ehdr = u.bytes2str(self.r2ob.cmdj("pcj %i@%i" % (self.Elf_Ehdr_size, self.start_offset)))
+        elf_ehdr_c = c.create_string_buffer(elf_ehdr)
+        ehdr = u.cast(elf_ehdr_c, 0, self.Elf_Ehdr)
+        self.ehdr = {
+            "e_type": ELFCLASS[ehdr.e_type],
+            "e_machine": EM[ehdr.e_machine],
+            "e_version": EV[ehdr.e_version],
+            "e_entry": ehdr.e_entry,
+            "e_phoff": ehdr.e_phoff,
+            "e_shoff": ehdr.e_shoff,
+            "e_flags": ehdr.e_flags,
+            "e_ehsize": ehdr.e_ehsize,
+            "e_phentsize": ehdr.e_phentsize,
+            "e_phnum": ehdr.e_phnum,
+            "e_shentsize": ehdr.e_shentsize,
+            "e_shnum": ehdr.e_shnum,
+            "e_shstrndx": ehdr.e_shstrndx
+        }
+
+    def r2_commands(self):
+        yield self.Elf_Ehdr_machine_enum_td
+        yield self.Elf_Ehdr_type_enum_td
+        yield "pf.Elf_Ehdr %s" % self.Elf_Ehdr_fmt
+
+        yield "# Bug in:"
+        yield ("# Cf %i %s @0x%x" % (self.Elf_Ehdr_size, self.Elf_Ehdr_fmt, self.start_offset))
 
 
 class ElfPhdr(u.R2Scriptable):
