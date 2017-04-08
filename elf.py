@@ -346,7 +346,6 @@ class ElfEhdr(u.R2Scriptable):
         self._analyse()
 
     def _get_elf_class(self):
-        self.r2ob.cmd("s %i" % self.start_offset)
         a = self.r2ob.cmdj("pfj N2 @ %i"
                            % (self.start_offset + c.sizeof(c.c_ubyte * eh.EI_NIDENT)))
         return a[0]["value"]

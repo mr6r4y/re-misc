@@ -45,6 +45,7 @@ def main():
     else:
         e = r2p.open()
 
+    e.cmd("#")   # issued because of a forgotten print on init
     o = elf.ElfEhdr(e, args.offset)
 
     if not args.file and args.analysis:
