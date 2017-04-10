@@ -333,22 +333,22 @@ class ElfEhdr(u.R2Scriptable):
         self.Elf_Ehdr_size = c.sizeof(self.Elf_Ehdr)
 
         self.Elf_Ehdr_fmt = ("[16]c[2]E[2]Exxxxxwwwwww "
-                             "e_ident (elf_class)e_type (elf_machine)e_machine e_version e_entry "
+                             "e_ident (elf_type)e_type (elf_machine)e_machine e_version e_entry "
                              "e_phoff e_shoff e_flags e_ehsize e_phentsize "
                              "e_phnum e_shentsize e_shnum "
                              "e_shstrndx") if self.elf_class == eh.ELFCLASS32 else \
                             ("[16]c[2]E[2]Exqqqxwwwwww "
-                             "e_ident (elf_class)e_type (elf_machine)e_machine e_version e_entry "
+                             "e_ident (elf_type)e_type (elf_machine)e_machine e_version e_entry "
                              "e_phoff e_shoff e_flags e_ehsize e_phentsize "
                              "e_phnum e_shentsize e_shnum e_shstrndx")
         self.Elf_Ehdr_machine_enum_td = u.enum2td("elf_machine", EM)
-        self.Elf_Ehdr_type_enum_td = u.enum2td("elf_class", ELFCLASS)
+        self.Elf_Ehdr_type_enum_td = u.enum2td("elf_type", ET)
 
         self._analyse()
 
     def _get_elf_class(self):
-        a = self.r2ob.cmdj("pfj N2 @ %i"
-                           % (self.elf_offset + c.sizeof(c.c_ubyte * eh.EI_NIDENT)))
+        a = self.r2ob.cmdj("pfj N1 @ %i"
+                           % (self.elf_offset + eh.EI_CLASS))
         return a[0]["value"]
 
     def _analyse(self):
@@ -356,7 +356,8 @@ class ElfEhdr(u.R2Scriptable):
         elf_ehdr_c = c.create_string_buffer(elf_ehdr)
         ehdr = u.cast(elf_ehdr_c, 0, self.Elf_Ehdr)
         self.ehdr = {
-            "e_type": ELFCLASS[ehdr.e_type],
+            "elfclass": self.elf_class,
+            "e_type": ET[ehdr.e_type],
             "e_machine": EM[ehdr.e_machine],
             "e_version": EV[ehdr.e_version],
             "e_entry": ehdr.e_entry,
@@ -390,7 +391,7 @@ class ElfPhdr(u.R2Scriptable):
         self.phoff = self.elf_offset + self.ehdr["e_phoff"]
         self.phnum = self.ehdr["e_phnum"]
 
-        self.elf_class = self._get_elf_class()
+        self.elf_class = self.ehdr["elfclass"]
         self.Elf_Phdr = eh.Elf32_Phdr if self.elf_class == eh.ELFCLASS32 else eh.Elf64_Phdr
         self.Elf_Phdr_size = c.sizeof(self.Elf_Phdr)
         self.Elf_Phdr_fmt = ("[4]Exxxxxxx (phdr_type)p_type p_offset p_vaddr p_paddr p_filesz p_memsz "
@@ -401,11 +402,6 @@ class ElfPhdr(u.R2Scriptable):
 
         self.segments = None
         self._analyse()
-
-    def _get_elf_class(self):
-        a = self.r2ob.cmdj("pfj N2 @ %i"
-                           % (self.elf_offset + c.sizeof(c.c_ubyte * eh.EI_NIDENT)))
-        return a[0]["value"]
 
     def _parse_segments(self, segments):
         for s, o in segments:
