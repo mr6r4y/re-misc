@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-#-*- coding: utf-8 -*
-
-
-__all__ = []
 
 
 import sys
@@ -15,14 +11,18 @@ import r2pipe as r2p
 import elf
 
 
+__all__ = []
+
+
 def get_args():
     parser = argparse.ArgumentParser(description="Parse .symtab section for ELF file format")
     parser.add_argument("-f", "--file",
                         help="Path to file for analysis")
-    parser.add_argument("-v", "--use-vaddr", action="store_true",
-                        help="If set, the vaddr instead of paddr is used")
+    parser.add_argument("-o", "--offset", default=0x0, type=int,
+                        help="Start offset for ELF parsing")
     parser.add_argument("-a", "--analysis", action="store_true",
-                        help="If set and used with #!pipe, the analysis commands are run from within the script")
+                        help=("If set and used with #!pipe, the analysis commands are "
+                              "run from within the script"))
     parser.add_argument("-j", "--json-format", action="store_true",
                         help="If set the output format would be JSON")
     parser.add_argument("-r", "--r2-format", action="store_true",
@@ -46,25 +46,37 @@ def main():
     else:
         e = r2p.open()
 
-    o = elf.ElfPhdr(e, use_vaddr=args.use_vaddr)
+    e.cmd("#")   # issued because of a forgotten print on init
+    o = elf.ElfPhdr(e, args.offset)
 
     if not args.file and args.analysis:
         o.exec_r2_commands()
+        sys.exit()
 
     if args.r2_script_file:
         o.save_r2_project(args.r2_script_file)
 
     if not args.no_output and args.json_format:
-        print json.dumps(o.phdrs)
+        print json.dumps(o.segments)
     elif not args.no_output and args.r2_format:
         for i in o.r2_commands():
             print i
     elif not args.no_output:
-        h = []
+        h = ["type", "flags", "p_offset", "p_vaddr",
+             "p_paddr", "p_filesz", "p_memsz",
+             "p_align", "hdr_offset"]
         t = []
-        for i in o.phdrs:
+        for i in o.segments:
             t.append([
-
+                "%s" % i["type"] if isinstance(i["type"], str) else "0x%x" % i["type"],
+                i["flags"],
+                "0x%x" % i["p_offset"],
+                "0x%x" % i["p_vaddr"],
+                "0x%x" % i["p_paddr"],
+                "0x%x" % i["p_filesz"],
+                "0x%x" % i["p_memsz"],
+                "0x%x" % i["p_align"],
+                "0x%x" % i["hdr_offset"],
             ])
         print
         print tabulate(t, headers=h)

@@ -320,9 +320,9 @@ class ElfSym(u.R2Scriptable):
 
 
 class ElfEhdr(u.R2Scriptable):
-    def __init__(self, r2ob, start_offset):
+    def __init__(self, r2ob, elf_offset):
         super(ElfEhdr, self).__init__(r2ob)
-        self.start_offset = start_offset
+        self.elf_offset = elf_offset
         self.elf_class = self._get_elf_class()
 
         if self.elf_class not in (eh.ELFCLASS32, eh.ELFCLASS64):
@@ -330,12 +330,12 @@ class ElfEhdr(u.R2Scriptable):
 
         self.Elf_Ehdr = eh.Elf32_Ehdr if self.elf_class == eh.ELFCLASS32 else eh.Elf64_Ehdr
         self.Elf_Ehdr_size = c.sizeof(self.Elf_Ehdr)
-        self.end_offset = self.start_offset + self.Elf_Ehdr_size
 
         self.Elf_Ehdr_fmt = ("[16]c[2]E[2]Exxxxxwwwwww "
                              "e_ident (elf_class)e_type (elf_machine)e_machine e_version e_entry "
                              "e_phoff e_shoff e_flags e_ehsize e_phentsize "
-                             "e_phnum e_shentsize e_shnum e_shstrndx") if self.elf_class == eh.ELFCLASS32 else\
+                             "e_phnum e_shentsize e_shnum "
+                             "e_shstrndx") if self.elf_class == eh.ELFCLASS32 else \
                             ("[16]c[2]E[2]Exqqqxwwwwww "
                              "e_ident (elf_class)e_type (elf_machine)e_machine e_version e_entry "
                              "e_phoff e_shoff e_flags e_ehsize e_phentsize "
@@ -347,11 +347,11 @@ class ElfEhdr(u.R2Scriptable):
 
     def _get_elf_class(self):
         a = self.r2ob.cmdj("pfj N2 @ %i"
-                           % (self.start_offset + c.sizeof(c.c_ubyte * eh.EI_NIDENT)))
+                           % (self.elf_offset + c.sizeof(c.c_ubyte * eh.EI_NIDENT)))
         return a[0]["value"]
 
     def _analyse(self):
-        elf_ehdr = u.bytes2str(self.r2ob.cmdj("pcj %i@%i" % (self.Elf_Ehdr_size, self.start_offset)))
+        elf_ehdr = u.bytes2str(self.r2ob.cmdj("pcj %i@%i" % (self.Elf_Ehdr_size, self.elf_offset)))
         elf_ehdr_c = c.create_string_buffer(elf_ehdr)
         ehdr = u.cast(elf_ehdr_c, 0, self.Elf_Ehdr)
         self.ehdr = {
@@ -376,15 +376,69 @@ class ElfEhdr(u.R2Scriptable):
         yield "pf.Elf_Ehdr %s" % self.Elf_Ehdr_fmt
 
         yield "# Bug in:"
-        yield ("# Cf %i %s @0x%x" % (self.Elf_Ehdr_size, self.Elf_Ehdr_fmt, self.start_offset))
+        yield ("# Cf %i %s @0x%x" % (self.Elf_Ehdr_size, self.Elf_Ehdr_fmt, self.elf_offset))
 
 
 class ElfPhdr(u.R2Scriptable):
-    def __init__(self, r2ob):
+    def __init__(self, r2ob, elf_offset):
         super(ElfPhdr, self).__init__(r2ob)
 
+        self.elf_offset = elf_offset
+        self.ehdr = ElfEhdr(self.r2ob, self.elf_offset).ehdr
+
+        self.phoff = self.elf_offset + self.ehdr["e_phoff"]
+        self.phnum = self.ehdr["e_phnum"]
+
+        self.elf_class = self._get_elf_class()
+        self.Elf_Phdr = eh.Elf32_Phdr if self.elf_class == eh.ELFCLASS32 else eh.Elf64_Phdr
+        self.Elf_Phdr_size = c.sizeof(self.Elf_Phdr)
+        self.Elf_Phdr_fmt = ("[4]Exxxxxxx (phdr_type)p_type p_offset p_vaddr p_paddr p_filesz p_memsz "
+                             "p_flags p_align") if self.elf_class == eh.ELFCLASS32 else \
+                            ("[4]Exqqqqqq (phdr_type)p_type p_flags p_offset p_vaddr p_paddr "
+                             "p_filesz p_memsz p_align")
+        self.Elf_Phdr_pt_enum_td = u.enum2td("phdr_type", DT)
+
+        self.segments = None
+        self._analyse()
+
+    def _get_elf_class(self):
+        a = self.r2ob.cmdj("pfj N2 @ %i"
+                           % (self.elf_offset + c.sizeof(c.c_ubyte * eh.EI_NIDENT)))
+        return a[0]["value"]
+
+    def _parse_segments(self, segments):
+        for s, o in segments:
+            yield {
+                "p_type": s.p_type,
+                "p_offset": s.p_offset,
+                "p_vaddr": s.p_vaddr,
+                "p_paddr": s.p_paddr,
+                "p_filesz": s.p_filesz,
+                "p_memsz": s.p_memsz,
+                "p_flags": s.p_flags,
+                "p_align": s.p_align,
+                "type": DT.get(s.p_type, s.p_type),
+                "flags": "|".join([PF[i] for i in filter(lambda a: s.p_flags & a, PF)]),
+                "hdr_offset": self.phoff + o
+            }
+
+    def _analyse(self):
+        elf_phdr = u.bytes2str(self.r2ob.cmdj("pcj %i@%i" % (self.Elf_Phdr_size * self.phnum,
+                                                             self.phoff)))
+        elf_phdr_c = c.create_string_buffer(elf_phdr)
+        segments_l = []
+        for i in range(len(elf_phdr) / self.Elf_Phdr_size):
+            offset = i * self.Elf_Phdr_size
+            segments_l.append((u.cast(elf_phdr_c, offset, self.Elf_Phdr), offset))
+
+        self.segments = [i for i in self._parse_segments(segments_l)]
+
     def r2_commands(self):
-        pass
+        yield self.Elf_Phdr_pt_enum_td
+        yield "pf.Elf_Phdr %s" % self.Elf_Phdr_fmt
+
+        for s in self.segments:
+            yield ("Cf %i %s @0x%x" % (self.Elf_Phdr_size, self.Elf_Phdr_fmt, s["hdr_offset"]))
 
 
 class ElfRel(u.R2Scriptable):
