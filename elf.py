@@ -68,6 +68,7 @@ PT = {
     eh.PT_HIPROC: "PT_HIPROC",
     eh.PT_GNU_EH_FRAME: "PT_GNU_EH_FRAME",
     eh.PT_GNU_STACK: "PT_GNU_STACK",
+    eh.PT_GNU_RELRO: "PT_GNU_RELRO",
 }
 
 
@@ -396,7 +397,7 @@ class ElfPhdr(u.R2Scriptable):
                              "p_flags p_align") if self.elf_class == eh.ELFCLASS32 else \
                             ("[4]Exqqqqqq (phdr_type)p_type p_flags p_offset p_vaddr p_paddr "
                              "p_filesz p_memsz p_align")
-        self.Elf_Phdr_pt_enum_td = u.enum2td("phdr_type", DT)
+        self.Elf_Phdr_pt_enum_td = u.enum2td("phdr_type", PT)
 
         self.segments = None
         self._analyse()
@@ -417,7 +418,7 @@ class ElfPhdr(u.R2Scriptable):
                 "p_memsz": s.p_memsz,
                 "p_flags": s.p_flags,
                 "p_align": s.p_align,
-                "type": DT.get(s.p_type, s.p_type),
+                "type": PT.get(s.p_type, s.p_type),
                 "flags": "|".join([PF[i] for i in filter(lambda a: s.p_flags & a, PF)]),
                 "hdr_offset": self.phoff + o
             }
