@@ -4,6 +4,7 @@ import ctypes as c
 
 import lin_hh.elf_h as eh
 import utils as u
+from collections import OrderedDict
 
 
 __all__ = []
@@ -355,22 +356,23 @@ class ElfEhdr(u.R2Scriptable):
         elf_ehdr = u.bytes2str(self.r2ob.cmdj("pcj %i@%i" % (self.Elf_Ehdr_size, self.elf_offset)))
         elf_ehdr_c = c.create_string_buffer(elf_ehdr)
         ehdr = u.cast(elf_ehdr_c, 0, self.Elf_Ehdr)
-        self.ehdr = {
-            "elfclass": self.elf_class,
-            "e_type": ET[ehdr.e_type],
-            "e_machine": EM[ehdr.e_machine],
-            "e_version": EV[ehdr.e_version],
-            "e_entry": ehdr.e_entry,
-            "e_phoff": ehdr.e_phoff,
-            "e_shoff": ehdr.e_shoff,
-            "e_flags": ehdr.e_flags,
-            "e_ehsize": ehdr.e_ehsize,
-            "e_phentsize": ehdr.e_phentsize,
-            "e_phnum": ehdr.e_phnum,
-            "e_shentsize": ehdr.e_shentsize,
-            "e_shnum": ehdr.e_shnum,
-            "e_shstrndx": ehdr.e_shstrndx
-        }
+        self.ehdr = OrderedDict([
+            ("ei_class", self.elf_class,),
+            ("ei_class_desc", ELFCLASS.get(self.elf_class, "N/A"),),
+            ("e_type", ET[ehdr.e_type],),
+            ("e_machine", EM[ehdr.e_machine],),
+            ("e_version", EV[ehdr.e_version],),
+            ("e_entry", ehdr.e_entry,),
+            ("e_phoff", ehdr.e_phoff,),
+            ("e_shoff", ehdr.e_shoff,),
+            ("e_flags", ehdr.e_flags,),
+            ("e_ehsize", ehdr.e_ehsize,),
+            ("e_phentsize", ehdr.e_phentsize,),
+            ("e_phnum", ehdr.e_phnum,),
+            ("e_shentsize", ehdr.e_shentsize,),
+            ("e_shnum", ehdr.e_shnum,),
+            ("e_shstrndx", ehdr.e_shstrndx),
+        ])
 
     def r2_commands(self):
         yield self.Elf_Ehdr_machine_enum_td
@@ -391,7 +393,7 @@ class ElfPhdr(u.R2Scriptable):
         self.phoff = self.elf_offset + self.ehdr["e_phoff"]
         self.phnum = self.ehdr["e_phnum"]
 
-        self.elf_class = self.ehdr["elfclass"]
+        self.elf_class = self.ehdr["ei_class"]
         self.Elf_Phdr = eh.Elf32_Phdr if self.elf_class == eh.ELFCLASS32 else eh.Elf64_Phdr
         self.Elf_Phdr_size = c.sizeof(self.Elf_Phdr)
         self.Elf_Phdr_fmt = ("[4]Exxxxxxx (phdr_type)p_type p_offset p_vaddr p_paddr p_filesz p_memsz "
