@@ -206,8 +206,8 @@ ELFCLASS = {
 
 ELFDATA = {
     eh.ELFDATANONE: "ELFDATANONE",
-    eh.ELFDATA2LSB: "ELFDATA2LSB",
-    eh.ELFDATA2MSB: "ELFDATA2MSB",
+    eh.ELFDATA2LSB: "ELFDATA2LSB",       # Little endian 2's complement
+    eh.ELFDATA2MSB: "ELFDATA2MSB",       # Big endian 2's complement
 }
 
 
