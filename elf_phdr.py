@@ -57,7 +57,7 @@ def main():
         o.save_r2_project(args.r2_script_file)
 
     if not args.no_output and args.json_format:
-        print json.dumps(o.segments)
+        print json.dumps(o.phdrs)
     elif not args.no_output and args.r2_format:
         for i in o.r2_commands():
             print i
@@ -66,7 +66,7 @@ def main():
              "p_paddr", "p_filesz", "p_memsz",
              "p_align", "hdr_offset"]
         t = []
-        for i in o.segments:
+        for i in o.phdrs:
             t.append([
                 "%s" % i["type"] if isinstance(i["type"], str) else "0x%x" % i["type"],
                 i["flags"],
