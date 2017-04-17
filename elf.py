@@ -14,6 +14,10 @@ class NotSupportedError(StandardError):
     pass
 
 
+class ImpossibleExecutableError(StandardError):
+    pass
+
+
 EM = {
     eh.EM_NONE: "EM_NONE",
     eh.EM_M32: "EM_M32",
@@ -109,7 +113,17 @@ DT = {
     eh.DT_DEBUG: "DT_DEBUG",
     eh.DT_TEXTREL: "DT_TEXTREL",
     eh.DT_JMPREL: "DT_JMPREL",
+    eh.DT_BIND_NOW: "DT_BIND_NOW",
+    eh.DT_INIT_ARRAY: "DT_INIT_ARRAY",
+    eh.DT_FINI_ARRAY: "DT_FINI_ARRAY",
+    eh.DT_INIT_ARRAYSZ: "DT_INIT_ARRAYSZ",
+    eh.DT_FINI_ARRAYSZ: "DT_FINI_ARRAYSZ",
+    eh.DT_RUNPATH: "DT_RUNPATH",
+    eh.DT_FLAGS: "DT_FLAGS",
     eh.DT_ENCODING: "DT_ENCODING",
+    eh.DT_PREINIT_ARRAY: "DT_PREINIT_ARRAY",
+    eh.DT_PREINIT_ARRAYSZ: "DT_PREINIT_ARRAYSZ",
+    eh.DT_NUM: "DT_NUM",
     eh.OLD_DT_LOOS: "OLD_DT_LOOS",
     eh.DT_LOOS: "DT_LOOS",
     eh.DT_HIOS: "DT_HIOS",
@@ -128,6 +142,16 @@ DT = {
     eh.OLD_DT_HIOS: "OLD_DT_HIOS",
     eh.DT_LOPROC: "DT_LOPROC",
     eh.DT_HIPROC: "DT_HIPROC",
+    eh.DT_GNU_HASH: "DT_GNU_HASH",
+    eh.DT_TLSDESC_PLT: "DT_TLSDESC_PLT",
+    eh.DT_TLSDESC_GOT: "DT_TLSDESC_GOT",
+    eh.DT_GNU_CONFLICT: "DT_GNU_CONFLICT",
+    eh.DT_GNU_LIBLIST: "DT_GNU_LIBLIST",
+    eh.DT_CONFIG: "DT_CONFIG",
+    eh.DT_DEPAUDIT: "DT_DEPAUDIT",
+    eh.DT_AUDIT: "DT_AUDIT",
+    eh.DT_PLTPAD: "DT_PLTPAD",
+    eh.DT_MOVETAB: "DT_MOVETAB",
 }
 
 
@@ -402,11 +426,11 @@ class ElfPhdr(u.R2Scriptable):
                              "p_filesz p_memsz p_align")
         self.Elf_Phdr_pt_enum_td = u.enum2td("phdr_type", PT)
 
-        self.segments = None
+        self.phdrs = None
         self._analyse()
 
-    def _parse_segments(self, segments):
-        for s, o in segments:
+    def _parse_segments(self, phdrs):
+        for s, o in phdrs:
             yield {
                 "p_type": s.p_type,
                 "p_offset": s.p_offset,
@@ -430,13 +454,17 @@ class ElfPhdr(u.R2Scriptable):
             offset = i * self.Elf_Phdr_size
             segments_l.append((u.cast(elf_phdr_c, offset, self.Elf_Phdr), offset))
 
-        self.segments = [i for i in self._parse_segments(segments_l)]
+        self.phdrs = [i for i in self._parse_segments(segments_l)]
 
     def r2_commands(self):
         yield self.Elf_Phdr_pt_enum_td
         yield "pf.Elf_Phdr %s" % self.Elf_Phdr_fmt
 
-        for s in self.segments:
+        yield "fs phdr"
+
+        for s in self.phdrs:
+            yield ("f %s 0x%x @ 0x%x" % ("phdr.%s.0x%x" % (s["type"], s["hdr_offset"]),
+                                         self.Elf_Phdr_size, s["hdr_offset"]))
             yield ("Cf %i %s @0x%x" % (self.Elf_Phdr_size, self.Elf_Phdr_fmt, s["hdr_offset"]))
 
 
@@ -448,9 +476,66 @@ class ElfRel(u.R2Scriptable):
         pass
 
 
-class ElfDynamic(u.R2Scriptable):
-    def __init__(self, r2ob):
-        super(ElfDynamic, self).__init__(r2ob)
+class ElfDyn(u.R2Scriptable):
+    def __init__(self, r2ob, elf_offset):
+        super(ElfDyn, self).__init__(r2ob)
+
+        self.elf_offset = elf_offset
+        self.ehdr = ElfEhdr(self.r2ob, self.elf_offset).ehdr
+        self.phdrs = ElfPhdr(self.r2ob, self.elf_offset).phdrs
+
+        dphdrs = filter(lambda a: a["p_type"] == eh.PT_DYNAMIC, self.phdrs)
+        if not dphdrs:
+            raise ImpossibleExecutableError("There must be at least 1 PT_DYNAMIC "
+                                            "segment present in a working ELF")
+
+        self.dyn_phdr = dphdrs[0]
+
+        self.dynseg_off = elf_offset + self.dyn_phdr["p_offset"]
+        self.dynseg_size = self.dyn_phdr["p_filesz"]
+
+        self.elf_class = self.ehdr["ei_class"]
+        self.Elf_Dyn = eh.Elf32_Dyn if self.elf_class == eh.ELFCLASS32 else eh.Elf64_Dyn
+        self.Elf_Dyn_size = c.sizeof(self.Elf_Dyn)
+        self.Elf_Dyn_num = self.dynseg_size / self.Elf_Dyn_size
+
+        self.dt_type_enum_td = u.enum2td("elf_dt_type", DT)
+
+        self.Elf_Dyn_fmt = ("[4]Ex (elf_dt_type)d_tag d_val_addr") if self.elf_class == eh.ELFCLASS32 else\
+                           ("[8]Eq (elf_dt_type)d_tag d_val_addr")
+
+        self.dyns = None
+        self._analyse()
+
+    def _parse_dyns(self, dyns):
+        for s, o in dyns:
+            yield {
+                "offset": self.dynseg_off + o,
+                "d_tag": s.d_tag,
+                "d_val": s.d_un.d_val,
+                "d_ptr": s.d_un.d_val,
+                "tag": DT.get(s.d_tag, "UNKNOWN")
+            }
+
+    def _analyse(self):
+        elf_dyn = u.bytes2str(self.r2ob.cmdj("pcj %i@%i" % (self.Elf_Dyn_size * self.Elf_Dyn_num,
+                                                            self.dynseg_off)))
+        elf_dyn_c = c.create_string_buffer(elf_dyn)
+
+        dyns = []
+        for i in range(len(elf_dyn) / self.Elf_Dyn_size):
+            offset = i * self.Elf_Dyn_size
+            dyns.append((u.cast(elf_dyn_c, offset, self.Elf_Dyn), offset))
+
+        self.dyns = [i for i in self._parse_dyns(dyns)]
 
     def r2_commands(self):
-        pass
+        yield self.dt_type_enum_td
+        yield "pf.Elf_Dyn %s" % self.Elf_Dyn_fmt
+
+        yield "fs dyn"
+
+        for s in self.dyns:
+            yield ("f %s 0x%x @ 0x%x" % ("dyn.%s.0x%x" % (s["tag"], s["offset"]),
+                                         self.Elf_Dyn_size, s["offset"]))
+            yield ("Cf %i %s @0x%x" % (self.Elf_Dyn_size, self.Elf_Dyn_fmt, s["offset"]))

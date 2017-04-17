@@ -154,7 +154,17 @@ DT_PLTREL = 20
 DT_DEBUG = 21
 DT_TEXTREL = 22
 DT_JMPREL = 23
-DT_ENCODING = 32
+DT_BIND_NOW = 24                # Process relocations of object
+DT_INIT_ARRAY = 25                # Array with addresses of init fct
+DT_FINI_ARRAY = 26                # Array with addresses of fini fct
+DT_INIT_ARRAYSZ = 27                # Size in bytes of DT_INIT_ARRAY
+DT_FINI_ARRAYSZ = 28                # Size in bytes of DT_FINI_ARRAY
+DT_RUNPATH = 29                # Library search path
+DT_FLAGS = 30                # Flags for the object being loaded
+DT_ENCODING = 32                # Start of encoded range
+DT_PREINIT_ARRAY = 32                # Array with addresses of preinit fct
+DT_PREINIT_ARRAYSZ = 33                # size in bytes of DT_PREINIT_ARRAY
+DT_NUM = 34                # Number used
 OLD_DT_LOOS = 0x60000000
 DT_LOOS = 0x6000000d
 DT_HIOS = 0x6ffff000
@@ -173,6 +183,16 @@ DT_VERNEEDNUM = 0x6fffffff
 OLD_DT_HIOS = 0x6fffffff
 DT_LOPROC = 0x70000000
 DT_HIPROC = 0x7fffffff
+DT_GNU_HASH = 0x6ffffef5        # GNU-style hash table.
+DT_TLSDESC_PLT = 0x6ffffef6
+DT_TLSDESC_GOT = 0x6ffffef7
+DT_GNU_CONFLICT = 0x6ffffef8        # Start of conflict section
+DT_GNU_LIBLIST = 0x6ffffef9        # Library list
+DT_CONFIG = 0x6ffffefa        # Configuration information.
+DT_DEPAUDIT = 0x6ffffefb        # Dependency auditing.
+DT_AUDIT = 0x6ffffefc        # Object auditing.
+DT_PLTPAD = 0x6ffffefd        # PLT padding.
+DT_MOVETAB = 0x6ffffefe        # Move table.
 
 
 ## This info is needed when parsing the symbol table
