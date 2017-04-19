@@ -265,3 +265,11 @@ def cstruct2td(struct):
 
 def enum2td(enum_name, enum_dict):
     return '"td enum %s {%s};"' % (enum_name, ",".join(["%s=0x%x" % (k, v) for v, k in enum_dict.items()]))
+
+
+def enum2tk(enum_name, enum_dict):
+    yield "tk %s=enum" % enum_name
+
+    for k, v in enum_dict.items():
+        yield "tk %s.%s=0x%x" % (enum_name, v, k)
+        yield "tk %s.0x%x=%s" % (enum_name, k, v)

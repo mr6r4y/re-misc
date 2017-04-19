@@ -259,7 +259,7 @@ class ElfSym(u.R2Scriptable):
         self.Elf_Sym_fmt = "xbb[2]Eqq st_name st_info st_other (elf_shn)st_shndx st_value st_size"\
                            if self.elf_class == 'ELF64' else\
                            "xxxbb[2]E st_name st_value st_size st_info st_other (elf_shn)st_shndx"
-        self.Elf_Sym_shn_enum_td = u.enum2td("elf_shn", SHN)
+        self.Elf_Sym_shn_enum_td = u.enum2tk("elf_shn", SHN)
         self.Elf_Sym_size = c.sizeof(self.Elf_Sym)
 
         self.symbols = []
@@ -326,7 +326,8 @@ class ElfSym(u.R2Scriptable):
         self.symbols = self._parse_symbols(symstr_sect_l, ss_sect, sm[self.addr_type], ss[self.addr_type])
 
     def r2_commands(self):
-        yield self.Elf_Sym_shn_enum_td
+        for i in self.Elf_Sym_shn_enum_td:
+            yield i
 
         yield "pf.Elf_Sym %s" % self.Elf_Sym_fmt
 
@@ -366,8 +367,8 @@ class ElfEhdr(u.R2Scriptable):
                              "e_ident (elf_type)e_type (elf_machine)e_machine e_version e_entry "
                              "e_phoff e_shoff e_flags e_ehsize e_phentsize "
                              "e_phnum e_shentsize e_shnum e_shstrndx")
-        self.Elf_Ehdr_machine_enum_td = u.enum2td("elf_machine", EM)
-        self.Elf_Ehdr_type_enum_td = u.enum2td("elf_type", ET)
+        self.Elf_Ehdr_machine_enum_td = u.enum2tk("elf_machine", EM)
+        self.Elf_Ehdr_type_enum_td = u.enum2tk("elf_type", ET)
 
         self._analyse()
 
@@ -399,7 +400,9 @@ class ElfEhdr(u.R2Scriptable):
         ])
 
     def r2_commands(self):
-        yield self.Elf_Ehdr_machine_enum_td
+        for i in self.Elf_Ehdr_machine_enum_td:
+            yield i
+
         yield self.Elf_Ehdr_type_enum_td
         yield "pf.Elf_Ehdr %s" % self.Elf_Ehdr_fmt
 
@@ -424,7 +427,7 @@ class ElfPhdr(u.R2Scriptable):
                              "p_flags p_align") if self.elf_class == eh.ELFCLASS32 else \
                             ("[4]Exqqqqqq (phdr_type)p_type p_flags p_offset p_vaddr p_paddr "
                              "p_filesz p_memsz p_align")
-        self.Elf_Phdr_pt_enum_td = u.enum2td("phdr_type", PT)
+        self.Elf_Phdr_pt_enum_td = u.enum2tk("phdr_type", PT)
 
         self.phdrs = None
         self._analyse()
@@ -457,7 +460,9 @@ class ElfPhdr(u.R2Scriptable):
         self.phdrs = [i for i in self._parse_segments(segments_l)]
 
     def r2_commands(self):
-        yield self.Elf_Phdr_pt_enum_td
+        for i in self.Elf_Phdr_pt_enum_td:
+            yield i
+
         yield "pf.Elf_Phdr %s" % self.Elf_Phdr_fmt
 
         yield "fs phdr"
@@ -485,27 +490,27 @@ class ElfDyn(u.R2Scriptable):
         self.phdrs = ElfPhdr(self.r2ob, self.elf_offset).phdrs
 
         dphdrs = filter(lambda a: a["p_type"] == eh.PT_DYNAMIC, self.phdrs)
-        if not dphdrs:
-            raise ImpossibleExecutableError("There must be at least 1 PT_DYNAMIC "
-                                            "segment present in a working ELF")
 
-        self.dyn_phdr = dphdrs[0]
+        self.dyn_phdr = dphdrs[0] if dphdrs else None
 
-        self.dynseg_off = elf_offset + self.dyn_phdr["p_offset"]
-        self.dynseg_size = self.dyn_phdr["p_filesz"]
+        self.dyns = []
 
-        self.elf_class = self.ehdr["ei_class"]
-        self.Elf_Dyn = eh.Elf32_Dyn if self.elf_class == eh.ELFCLASS32 else eh.Elf64_Dyn
-        self.Elf_Dyn_size = c.sizeof(self.Elf_Dyn)
-        self.Elf_Dyn_num = self.dynseg_size / self.Elf_Dyn_size
+        if self.dyn_phdr:
+            self.dynseg_off = elf_offset + self.dyn_phdr["p_offset"]
+            self.dynseg_size = self.dyn_phdr["p_filesz"]
 
-        self.dt_type_enum_td = u.enum2td("elf_dt_type", DT)
+            self.elf_class = self.ehdr["ei_class"]
+            self.Elf_Dyn = eh.Elf32_Dyn if self.elf_class == eh.ELFCLASS32 else eh.Elf64_Dyn
+            self.Elf_Dyn_size = c.sizeof(self.Elf_Dyn)
+            self.Elf_Dyn_num = self.dynseg_size / self.Elf_Dyn_size
 
-        self.Elf_Dyn_fmt = ("[4]Ex (elf_dt_type)d_tag d_val_addr") if self.elf_class == eh.ELFCLASS32 else\
-                           ("[8]Eq (elf_dt_type)d_tag d_val_addr")
+            self.dt_type_enum_td = u.enum2tk("elf_dt_type", DT)
 
-        self.dyns = None
-        self._analyse()
+            self.Elf_Dyn_fmt = ("[4]Ex (elf_dt_type)d_tag d_val_addr")\
+                               if self.elf_class == eh.ELFCLASS32 else\
+                               ("[8]Eq (elf_dt_type)d_tag d_val_addr")
+
+            self._analyse()
 
     def _parse_dyns(self, dyns):
         for s, o in dyns:
@@ -530,7 +535,9 @@ class ElfDyn(u.R2Scriptable):
         self.dyns = [i for i in self._parse_dyns(dyns)]
 
     def r2_commands(self):
-        yield self.dt_type_enum_td
+        for i in self.dt_type_enum_td:
+            yield i
+
         yield "pf.Elf_Dyn %s" % self.Elf_Dyn_fmt
 
         yield "fs dyn"
