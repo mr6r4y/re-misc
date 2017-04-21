@@ -241,6 +241,41 @@ EV = {
     eh.EV_NUM: "EV_NUM",
 }
 
+R32 = {
+    eh.R_386_NONE: "R_386_NONE",
+    eh.R_386_32: "R_386_32",
+    eh.R_386_PC32: "R_386_PC32",
+    eh.R_386_GOT32: "R_386_GOT32",
+    eh.R_386_PLT32: "R_386_PLT32",
+    eh.R_386_COPY: "R_386_COPY",
+    eh.R_386_GLOB_DAT: "R_386_GLOB_DAT",
+    eh.R_386_JMP_SLOT: "R_386_JMP_SLOT",
+    eh.R_386_RELATIVE: "R_386_RELATIVE",
+    eh.R_386_GOTOFF: "R_386_GOTOFF",
+    eh.R_386_GOTPC: "R_386_GOTPC",
+    eh.R_386_NUM: "R_386_NUM",
+}
+
+R64 = {
+    eh.R_X86_64_NONE: "R_X86_64_NONE",
+    eh.R_X86_64_64: "R_X86_64_64",
+    eh.R_X86_64_PC32: "R_X86_64_PC32",
+    eh.R_X86_64_GOT32: "R_X86_64_GOT32",
+    eh.R_X86_64_PLT32: "R_X86_64_PLT32",
+    eh.R_X86_64_COPY: "R_X86_64_COPY",
+    eh.R_X86_64_GLOB_DAT: "R_X86_64_GLOB_DAT",
+    eh.R_X86_64_JUMP_SLOT: "R_X86_64_JUMP_SLOT",
+    eh.R_X86_64_RELATIVE: "R_X86_64_RELATIVE",
+    eh.R_X86_64_GOTPCREL: "R_X86_64_GOTPCREL",
+    eh.R_X86_64_32: "R_X86_64_32",
+    eh.R_X86_64_32S: "R_X86_64_32S",
+    eh.R_X86_64_16: "R_X86_64_16",
+    eh.R_X86_64_PC16: "R_X86_64_PC16",
+    eh.R_X86_64_8: "R_X86_64_8",
+    eh.R_X86_64_PC8: "R_X86_64_PC8",
+    eh.R_X86_64_NUM: "R_X86_64_NUM",
+}
+
 
 class ElfSym(u.R2Scriptable):
     def __init__(self, r2ob, sym_sect, symstr_sect, use_vaddr=False):
@@ -474,11 +509,78 @@ class ElfPhdr(u.R2Scriptable):
 
 
 class ElfRel(u.R2Scriptable):
-    def __init__(self, r2ob):
+    def __init__(self, r2ob, elf_offset):
         super(ElfRel, self).__init__(r2ob)
 
+        self.elf_offset = elf_offset
+        self.ehdr = ElfEhdr(self.r2ob, self.elf_offset).ehdr
+        self.dyns = ElfDyn(self.r2ob, self.elf_offset).dyns
+
+        self.elf_class = self.ehdr["ei_class"]
+        self.relocs = []
+
+        self.Elf_Rel = eh.Elf32_Rel if self.elf_class == eh.ELFCLASS32 else eh.Elf64_Rel
+        self.Elf_Rel_size = c.sizeof(self.Elf_Rel)
+        self.Elf_Rela = eh.Elf32_Rela if self.elf_class == eh.ELFCLASS32 else eh.Elf64_Rela
+        self.Elf_Rela_size = c.sizeof(self.Elf_Rela)
+        self.r_sym = eh.ELF32_R_SYM if self.elf_class == eh.ELFCLASS32 else eh.ELF64_R_SYM
+        self.r_type = eh.ELF32_R_TYPE if self.elf_class == eh.ELFCLASS32 else eh.ELF64_R_TYPE
+        self.r_type_enum = R32 if self.elf_class == eh.ELFCLASS32 else R64
+        self.r_type_enum_td = u.enum2tk("elf_reloc_type", self.r_type_enum)
+
+        self.Elf_Rel_fmt = "xq r_offset r_info" if self.elf_class == eh.ELFCLASS32 else "qx r_offset r_info"
+        self.Elf_Rela_fmt = "xxx r_offset r_info r_addend"\
+                            if self.elf_class == eh.ELFCLASS32 else\
+                            "qqq r_offset r_info r_addend"
+
+        self.relocs = []
+
+        if self.dyns:
+            self.relsz = filter(lambda a: a["d_tag"] == eh.DT_RELSZ, self.dyns)
+            self.relasz = filter(lambda a: a["d_tag"] == eh.DT_RELASZ, self.dyns)
+            self.rel = filter(lambda a: a["d_tag"] == eh.DT_REL, self.dyns)
+            self.rela = filter(lambda a: a["d_tag"] == eh.DT_RELA, self.dyns)
+
+            if self.relsz:
+                self._analyse_reln()
+            if self.relasz:
+                self._analyse_reln(addend=True)
+
+    def _parse_reln(self, rels, addend=False):
+        for r, o in rels:
+            yield {
+                "offset": o,
+                "r_offset": r.r_offset,
+                "r_info": r.r_info,
+                "r_addend": None if not addend else r.r_addend,
+                "r_sym": self.r_sym(r.r_info),
+                "r_type": self.r_type_enum.get(self.r_type(r.r_info), r.r_info)
+            }
+
+    def _analyse_reln(self, addend=False):
+        r_c = self.relsz[0]["d_val"] if not addend else self.relasz[0]["d_val"]
+        v_addr = self.rel[0]["d_ptr"] if not addend else self.rela[0]["d_ptr"]
+        sz = self.Elf_Rel_size if not addend else self.Elf_Rela_size
+        reln = self.Elf_Rel if not addend else self.Elf_Rela
+
+        relocs = u.bytes2str(self.r2ob.cmdj("pcj %i@%i" % (sz * r_c,
+                                                           v_addr)))
+        relocs_c = c.create_string_buffer(relocs)
+
+        rels = []
+        for i in range(len(relocs) / sz):
+            offset = i * sz
+            rels.append((u.cast(relocs_c, offset, reln), v_addr + offset))
+
+        for i in self._parse_reln(rels, addend):
+            self.relocs.append(i)
+
     def r2_commands(self):
-        pass
+        for i in self.r_type_enum_td:
+            yield i
+
+        yield "pf.Elf_Rel %s" % self.Elf_Rel_fmt
+        yield "pf.Elf_Rela %s" % self.Elf_Rela_fmt
 
 
 class ElfDyn(u.R2Scriptable):
@@ -518,7 +620,7 @@ class ElfDyn(u.R2Scriptable):
                 "offset": self.dynseg_off + o,
                 "d_tag": s.d_tag,
                 "d_val": s.d_un.d_val,
-                "d_ptr": s.d_un.d_val,
+                "d_ptr": s.d_un.d_ptr,
                 "tag": DT.get(s.d_tag, "UNKNOWN")
             }
 

@@ -259,6 +259,41 @@ class Elf64_Dyn(c.Structure):
     ]
 
 
+R_386_NONE = 0
+R_386_32 = 1
+R_386_PC32 = 2
+R_386_GOT32 = 3
+R_386_PLT32 = 4
+R_386_COPY = 5
+R_386_GLOB_DAT = 6
+R_386_JMP_SLOT = 7
+R_386_RELATIVE = 8
+R_386_GOTOFF = 9
+R_386_GOTPC = 10
+R_386_NUM = 11
+
+
+## x86-64 relocation types
+R_X86_64_NONE = 0   # No reloc
+R_X86_64_64 = 1   # Direct 64 bit
+R_X86_64_PC32 = 2   # PC relative 32 bit signed
+R_X86_64_GOT32 = 3   # 32 bit GOT entry
+R_X86_64_PLT32 = 4   # 32 bit PLT address
+R_X86_64_COPY = 5   # Copy symbol at runtime
+R_X86_64_GLOB_DAT = 6   # Create GOT entry
+R_X86_64_JUMP_SLOT = 7   # Create PLT entry
+R_X86_64_RELATIVE = 8   # Adjust by program base
+R_X86_64_GOTPCREL = 9   # 32 bit signed pc relati
+                        # offset to GOT
+R_X86_64_32 = 10  # Direct 32 bit zero extended
+R_X86_64_32S = 11  # Direct 32 bit sign extended
+R_X86_64_16 = 12  # Direct 16 bit zero extended
+R_X86_64_PC16 = 13  # 16 bit sign extended pc relative
+R_X86_64_8 = 14  # Direct 8 bit sign extended
+R_X86_64_PC8 = 15  # 8 bit sign extended pc relative
+R_X86_64_NUM = 16
+
+
 ## The following are used with relocations
 def ELF32_R_SYM(x):
     return x >> 8
