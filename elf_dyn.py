@@ -15,7 +15,7 @@ __all__ = []
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description="Parse .symtab section for ELF file format")
+    parser = argparse.ArgumentParser(description="Parse dynamic segmet in ELF file format")
     parser.add_argument("-f", "--file",
                         help="Path to file for analysis")
     parser.add_argument("-o", "--offset", default=0x0, type=int,
