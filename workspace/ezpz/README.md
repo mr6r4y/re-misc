@@ -9,7 +9,7 @@ used either statically:
 
 or within *radare2* debug session:
 
-```bash
+```
 r2 -d ./ezpz
 
 [0x7fa8478c0cc0]> #!pipe ./ezpz_solution.py
