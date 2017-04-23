@@ -3,6 +3,7 @@
 
 import argparse
 from tabulate import tabulate
+import json
 import r2pipe as r2p
 import elf
 
@@ -16,6 +17,8 @@ def get_args():
                         help="Path to file for analysis")
     parser.add_argument("-o", "--offset", default=0x0, type=int,
                         help="Start offset for ELF parsing")
+    parser.add_argument("-j", "--json-format", action="store_true",
+                        help="If set the output format would be JSON")
 
     args = parser.parse_args()
 
@@ -32,13 +35,16 @@ def main():
 
     # e.cmd("#")   # issued because of a forgotten print on init
     o = elf.ElfDyn(e, args.offset)
-    imported_libs = [[i] for i in elf.get_ldd(e, o)]
+    imported_libs = [i for i in elf.get_ldd(e, o)]
 
-    h = ["Imported Libs"]
-    
-    print
-    print tabulate(imported_libs, headers=h)
-    print
+    if args.json_format:
+        print json.dumps(imported_libs)
+    else:
+        h = ["Imported Libs"]
+        t = [[i] for i in imported_libs]
+        print
+        print tabulate(t, headers=h)
+        print
 
 
 if __name__ == "__main__":
