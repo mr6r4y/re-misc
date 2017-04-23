@@ -648,3 +648,14 @@ class ElfDyn(u.R2Scriptable):
             yield ("f %s 0x%x @ 0x%x" % ("dyn.%s.0x%x" % (s["tag"], s["offset"]),
                                          self.Elf_Dyn_size, s["offset"]))
             yield ("Cf %i %s @0x%x" % (self.Elf_Dyn_size, self.Elf_Dyn_fmt, s["offset"]))
+
+
+def get_ldd(r2ob, dyn_ob):
+    needed = filter(lambda a: a["d_tag"] == eh.DT_NEEDED, dyn_ob.dyns)
+    strtab = filter(lambda a: a["d_tag"] == eh.DT_STRTAB, dyn_ob.dyns)
+    if strtab:
+        strtab_v_adr = strtab[0]["d_ptr"]
+        for i in needed:
+            str_v_adr = strtab_v_adr + i["d_val"]
+            cm = "ps @ 0x%x" % str_v_adr
+            yield r2ob.cmd(cm)
