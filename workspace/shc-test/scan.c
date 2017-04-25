@@ -12,13 +12,13 @@ int main()
 	scanf ("%d", &x);
 	printf ("You entered %d...\n", x);
 
-    printf ("Enter X:\n");
-    scanf ("%d", &y);
-    printf ("You entered %d...\n", y);
+	printf ("Enter X:\n");
+	scanf ("%d", &y);
+	printf ("You entered %d...\n", y);
 
-    printf ("Enter X:\n");
-    scanf ("%d", &z);
-    printf ("You entered %d...\n", z);
+	printf ("Enter X:\n");
+	scanf ("%d", &z);
+	printf ("You entered %d...\n", z);
 
 	return 0;
 };

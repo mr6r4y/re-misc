@@ -2,7 +2,7 @@
 
 void init(int argc, char **argv, char **envp)
 {
-    printf("%s\n", __FUNCTION__);
+	printf("%s\n", __FUNCTION__);
 }
 
 
