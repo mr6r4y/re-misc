@@ -1,196 +1,0 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
-<html>
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<meta name="DreamPie Format" content="1">
-<title>DreamPie History</title>
-<style>
-body {
-  white-space: pre-wrap;
-  font-family: WenQuanYi Micro Hei Mono;
-  font-size: 11264;
-  color: #ffffff;
-  background-color: #000000;
-}
-span.folded {
- display: none;
-}
-span.commandsep {
- display: none;
-}
-span.command-defs {
-}
-span.command {
-}
-span.output {
-}
-span.fold-message {
-  color: #a7a7a7;
-  background-color: #003b6c;
-}
-span.message {
-  color: #ffff00;
-}
-span.prompt {
-  color: #e400b6;
-}
-span.exception {
-  color: #ff8080;
-}
-span.result-ind {
-  color: #0000ff;
-}
-span.result {
-  color: #bcffff;
-}
-span.stderr {
-  color: #ff8080;
-}
-span.stdout {
-  color: #bcffff;
-}
-span.stdin {
-}
-span.error {
-  background-color: #ff0000;
-}
-span.bracket-3 {
-  color: #ffabab;
-}
-span.bracket-2 {
-  color: #dfabff;
-}
-span.bracket-1 {
-  color: #abffab;
-}
-span.bracket-match {
-  background-color: #00008b;
-}
-span.comment {
-  color: #c9a3a0;
-}
-span.number {
-  color: #aeacff;
-}
-span.string {
-  color: #00e400;
-}
-span.builtin {
-  color: #efcfcf;
-}
-span.keyword {
-  color: #ff7700;
-}
-</style>
-</head>
-<body><span class="message">==================== New Session ====================
-</span><span class="output"><span class="stdout">CWD: /home/pvalov
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>os.chdir(<span class="string">"srcs/my-github/re-misc"</span>)
-<span class="prompt">... </span><span class="keyword">import</span> r2pipe <span class="keyword">as</span> r2p
-<span class="prompt">... </span><span class="keyword">import</span> ctypes <span class="keyword">as</span> c
-<span class="prompt">... </span>e = r2p.<span class="builtin">open</span>(<span class="string">"/bin/hostname"</span>)
-</span><span class="commandsep"></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>finfo = e.cmdj(<span class="string">'ij'</span>)
-</span><span class="commandsep"></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span><span class="keyword">import</span> utils <span class="keyword">as</span> u
-<span class="prompt">... </span><span class="keyword">import</span> lin_hh.elf_h <span class="keyword">as</span> eh
-<span class="prompt">... </span>
-<span class="prompt">... </span>finfo.get(<span class="string">'bin'</span>, {}).get(<span class="string">'class'</span>, <span class="builtin">None</span>)
-<span class="prompt">... </span>sections = e.cmdj(<span class="string">"Sj"</span>)
-<span class="prompt">... </span>dsm = <span class="builtin">filter</span>(<span class="keyword">lambda</span> a: <span class="string">'dynsym'</span> <span class="keyword">in</span> a[<span class="string">'name'</span>], sections)[<span class="number">0</span>]
-<span class="prompt">... </span><span class="comment"># get dynsym section as binary string</span>
-<span class="prompt">... </span>dsm_sect = u.bytes2str(e.cmdj(<span class="string">"pcj %i@%i"</span> % (dsm[<span class="string">'size'</span>], dsm[<span class="string">'paddr'</span>])))
-<span class="prompt">... </span>dss = <span class="builtin">filter</span>(<span class="keyword">lambda</span> a: <span class="string">'dynstr'</span> <span class="keyword">in</span> a[<span class="string">'name'</span>], sections)[<span class="number">0</span>]
-<span class="prompt">... </span>dss_sect = u.bytes2str(e.cmdj(<span class="string">"pcj %i@%i"</span> % (dss[<span class="string">'size'</span>], dss[<span class="string">'paddr'</span>])))
-<span class="prompt">... </span>
-<span class="prompt">... </span>e_cl = finfo.get(<span class="string">'bin'</span>, {}).get(<span class="string">'class'</span>, <span class="builtin">None</span>)
-<span class="prompt">... </span>Elf_Sym = eh.Elf64_Sym <span class="keyword">if</span> e_cl == <span class="string">'ELF64'</span> <span class="keyword">else</span> eh.Elf32_Sym
-<span class="prompt">... </span>
-<span class="prompt">... </span>a = []
-<span class="prompt">... </span>dsm_sect_c = c.create_string_buffer(dsm_sect)
-<span class="prompt">... </span><span class="keyword">for</span> i <span class="keyword">in</span> <span class="builtin">range</span>(<span class="builtin">len</span>(dsm_sect) / c.sizeof(Elf_Sym)):
-<span class="prompt">... </span>    a.append(u.cast(dsm_sect_c, i*c.sizeof(Elf_Sym), Elf_Sym))
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">0: </span><span class="result">u'ELF64'
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>dsm_sect_c
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">1: </span><span class="result">&lt;ctypes.c_char_Array_1225 object at 0x7effc9dc6320&gt;
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>a[<span class="number">1</span>].st_name
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">2: </span><span class="result">555L
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>u.cast_to_pointer(dsm_sect_c, <span class="number">555</span>, c.c_char)
-</span><span class="commandsep"></span><span class="output"><span class="exception">Traceback (most recent call last):
-  File "&lt;pyshell#6&gt;", line 1, in &lt;module&gt;
-    u.cast_to_pointer(dsm_sect_c, 555, c.c_char)
-  File "utils.py", line 54, in cast_to_pointer
-    return c.cast(c.byref(cast_from, offset), pointer_type)
-  File "/usr/lib/python2.7/ctypes/__init__.py", line 502, in cast
-    return _cast(obj, obj, typ)
-TypeError: cast() argument 2 must be a pointer type, not c_char
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>u.cast_to_pointer(dsm_sect_c, <span class="number">555</span>, c.c_char_p)
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">3: </span><span class="result">c_char_p(18297435)
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>u.cast_to_pointer(dsm_sect_c, <span class="number">555</span>, c.c_char_p).value
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">4: </span><span class="result">''
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>u.cast_to_pointer(dsm_sect_c, <span class="number">555</span>, c.c_char_p).value
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">5: </span><span class="result">''
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>a[<span class="number">2</span>].st_name
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">6: </span><span class="result">236L
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>u.cast_to_pointer(dsm_sect_c, <span class="number">236</span>, c.c_char_p).value
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">7: </span><span class="result">''
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>u.cast(dsm_sect_c, <span class="number">236</span>, c.c_char_p).value
-</span><span class="commandsep"></span>
-<span class="message">==================== New Session ====================
-</span><span class="output"><span class="stdout">CWD: /home/pvalov
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>os.chdir(<span class="string">"srcs/my-github/re-misc"</span>)
-<span class="prompt">... </span><span class="keyword">import</span> r2pipe <span class="keyword">as</span> r2p
-<span class="prompt">... </span><span class="keyword">import</span> ctypes <span class="keyword">as</span> c
-<span class="prompt">... </span>e = r2p.<span class="builtin">open</span>(<span class="string">"/bin/hostname"</span>)
-<span class="prompt">... </span>finfo = e.cmdj(<span class="string">'ij'</span>)
-<span class="prompt">... </span><span class="keyword">import</span> utils <span class="keyword">as</span> u
-<span class="prompt">... </span><span class="keyword">import</span> lin_hh.elf_h <span class="keyword">as</span> eh
-<span class="prompt">... </span>
-<span class="prompt">... </span>finfo.get(<span class="string">'bin'</span>, {}).get(<span class="string">'class'</span>, <span class="builtin">None</span>)
-<span class="prompt">... </span>sections = e.cmdj(<span class="string">"Sj"</span>)
-<span class="prompt">... </span>dsm = <span class="builtin">filter</span>(<span class="keyword">lambda</span> a: <span class="string">'dynsym'</span> <span class="keyword">in</span> a[<span class="string">'name'</span>], sections)[<span class="number">0</span>]
-<span class="prompt">... </span><span class="comment"># get dynsym section as binary string</span>
-<span class="prompt">... </span>dsm_sect = u.bytes2str(e.cmdj(<span class="string">"pcj %i@%i"</span> % (dsm[<span class="string">'size'</span>], dsm[<span class="string">'paddr'</span>])))
-<span class="prompt">... </span>dss = <span class="builtin">filter</span>(<span class="keyword">lambda</span> a: <span class="string">'dynstr'</span> <span class="keyword">in</span> a[<span class="string">'name'</span>], sections)[<span class="number">0</span>]
-<span class="prompt">... </span>dss_sect = u.bytes2str(e.cmdj(<span class="string">"pcj %i@%i"</span> % (dss[<span class="string">'size'</span>], dss[<span class="string">'paddr'</span>])))
-<span class="prompt">... </span>
-<span class="prompt">... </span>e_cl = finfo.get(<span class="string">'bin'</span>, {}).get(<span class="string">'class'</span>, <span class="builtin">None</span>)
-<span class="prompt">... </span>Elf_Sym = eh.Elf64_Sym <span class="keyword">if</span> e_cl == <span class="string">'ELF64'</span> <span class="keyword">else</span> eh.Elf32_Sym
-<span class="prompt">... </span>
-<span class="prompt">... </span>a = []
-<span class="prompt">... </span>dsm_sect_c = c.create_string_buffer(dsm_sect)
-<span class="prompt">... </span><span class="keyword">for</span> i <span class="keyword">in</span> <span class="builtin">range</span>(<span class="builtin">len</span>(dsm_sect) / c.sizeof(Elf_Sym)):
-<span class="prompt">... </span>    a.append(u.cast(dsm_sect_c, i*c.sizeof(Elf_Sym), Elf_Sym))
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">0: </span><span class="result">u'ELF64'
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>a[<span class="number">0</span>]
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">1: </span><span class="result">&lt;lin_hh.elf_h.Elf64_Sym object at 0x7f9874eb4440&gt;
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>a[<span class="number">0</span>].st_name
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">2: </span><span class="result">0L
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>dss_sect[a[<span class="number">0</span>].st_name:].rfind(<span class="string">"\x00"</span>)
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">3: </span><span class="result">603
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>dss_sect[a[<span class="number">0</span>].st_name:].rpartition(<span class="string">"\x00"</span>)
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">4: </span><span class="result">('\x00libnsl.so.1\x00_ITM_deregisterTMCloneTable\x00__gmon_start__\x00_Jv_RegisterClasses\x00_ITM_registerTMCloneTable\x00yp_get_default_domain\x00yperr_string\x00libc.so.6\x00__printf_chk\x00exit\x00fopen\x00gai_strerror\x00optind\x00__strdup\x00getdomainname\x00puts\x00__stack_chk_fail\x00putchar\x00realloc\x00memchr\x00strchrnul\x00fgets\x00strlen\x00getaddrinfo\x00__errno_location\x00getnameinfo\x00sethostname\x00stdout\x00fclose\x00malloc\x00__ctype_b_loc\x00optarg\x00stderr\x00gethostbyname\x00getopt_long\x00freeifaddrs\x00getifaddrs\x00__fxstat\x00fileno\x00gethostname\x00fwrite\x00strchr\x00rindex\x00hstrerror\x00__h_errno_location\x00errx\x00strcmp\x00__libc_start_main\x00setdomainname\x00free\x00GLIBC_2.2.5\x00GLIBC_2.3.4\x00GLIBC_2.3\x00GLIBC_2.4',
- '\x00',
- '')
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>dss_sect[a[<span class="number">0</span>].st_name:].rpartition(<span class="string">"\x00"</span>)[<span class="number">0</span>]
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">5: </span><span class="result">'\x00libnsl.so.1\x00_ITM_deregisterTMCloneTable\x00__gmon_start__\x00_Jv_RegisterClasses\x00_ITM_registerTMCloneTable\x00yp_get_default_domain\x00yperr_string\x00libc.so.6\x00__printf_chk\x00exit\x00fopen\x00gai_strerror\x00optind\x00__strdup\x00getdomainname\x00puts\x00__stack_chk_fail\x00putchar\x00realloc\x00memchr\x00strchrnul\x00fgets\x00strlen\x00getaddrinfo\x00__errno_location\x00getnameinfo\x00sethostname\x00stdout\x00fclose\x00malloc\x00__ctype_b_loc\x00optarg\x00stderr\x00gethostbyname\x00getopt_long\x00freeifaddrs\x00getifaddrs\x00__fxstat\x00fileno\x00gethostname\x00fwrite\x00strchr\x00rindex\x00hstrerror\x00__h_errno_location\x00errx\x00strcmp\x00__libc_start_main\x00setdomainname\x00free\x00GLIBC_2.2.5\x00GLIBC_2.3.4\x00GLIBC_2.3\x00GLIBC_2.4'
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>dss_sect[a[<span class="number">0</span>].st_name:].partition(<span class="string">"\x00"</span>)
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">6: </span><span class="result">('',
- '\x00',
- 'libnsl.so.1\x00_ITM_deregisterTMCloneTable\x00__gmon_start__\x00_Jv_RegisterClasses\x00_ITM_registerTMCloneTable\x00yp_get_default_domain\x00yperr_string\x00libc.so.6\x00__printf_chk\x00exit\x00fopen\x00gai_strerror\x00optind\x00__strdup\x00getdomainname\x00puts\x00__stack_chk_fail\x00putchar\x00realloc\x00memchr\x00strchrnul\x00fgets\x00strlen\x00getaddrinfo\x00__errno_location\x00getnameinfo\x00sethostname\x00stdout\x00fclose\x00malloc\x00__ctype_b_loc\x00optarg\x00stderr\x00gethostbyname\x00getopt_long\x00freeifaddrs\x00getifaddrs\x00__fxstat\x00fileno\x00gethostname\x00fwrite\x00strchr\x00rindex\x00hstrerror\x00__h_errno_location\x00errx\x00strcmp\x00__libc_start_main\x00setdomainname\x00free\x00GLIBC_2.2.5\x00GLIBC_2.3.4\x00GLIBC_2.3\x00GLIBC_2.4\x00')
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>dss_sect[a[<span class="number">0</span>].st_name:].partition(<span class="string">"\x00"</span>)[<span class="number">0</span>]
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">7: </span><span class="result">''
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>dss_sect[a[<span class="number">1</span>].st_name:].partition(<span class="string">"\x00"</span>)[<span class="number">0</span>]
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">8: </span><span class="result">'free'
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>dss_sect[a[<span class="number">2</span>].st_name:].partition(<span class="string">"\x00"</span>)[<span class="number">0</span>]
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">9: </span><span class="result">'putchar'
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>a[<span class="number">1</span>].st_info
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">10: </span><span class="result">18
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>a[<span class="number">1</span>].st_size
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">11: </span><span class="result">0L
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>a[<span class="number">1</span>].st_value
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">12: </span><span class="result">0L
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>a[<span class="number">1</span>].st_shndx
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">13: </span><span class="result">0
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span>a[<span class="number">1</span>].st_info
-</span><span class="commandsep"></span><span class="output"><span class="result-ind">14: </span><span class="result">18
-</span></span><span class="command"><span class="prompt">&gt;&gt;&gt; </span></span></body>
-</html>
