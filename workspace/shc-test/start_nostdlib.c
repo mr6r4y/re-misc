@@ -1,5 +1,5 @@
 
 int _start()
 {
-__asm__("leave");
+	__asm__("leave");
 }

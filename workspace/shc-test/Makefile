@@ -1,4 +1,4 @@
-all: empty_main empty_main_pic empty_main_gdb init_array hook start_nostdlib t.bin hook_pic hook_pic_x86 hook_x86
+all: empty_main empty_main_pic empty_main_gdb init_array hook start_nostdlib t.bin hook_pic hook_pic_x86 hook_x86 scan_x86 scan strcpy_crash strcpy_crash_x86 callee_params callee_params_x86 ret_val ret_val_x86
 
 empty_main: empty_main.c
 	gcc -o $@ $^
@@ -28,11 +28,35 @@ start_nostdlib: start_nostdlib.c
 	gcc -nostdlib -o $@ $^
 	strip $@
 
+scan_x86: scan.c
+	gcc -m32 -o $@ $^
+
+scan: scan.c
+	gcc -o $@ $^
+
+strcpy_crash_x86: strcpy_crash.c
+	gcc -m32 -o $@ $^
+
+strcpy_crash: strcpy_crash.c
+	gcc -o $@ $^
+
 t.bin: t.rasm
 	rasm2 -Bf t.rasm -O t.bin
 
+callee_params: callee_params.c
+	gcc -o $@ $^
+
+callee_params_x86: callee_params.c
+	gcc -m32 -o $@ $^
+
+ret_val_x86: ret_val.c
+	gcc -m32 -o $@ $^
+
+ret_val: ret_val.c
+	gcc -o $@ $^
+
 clean:
-	rm empty_main empty_main_pic empty_main_gdb init_array hook start_nostdlib t.bin hook_pic hook_pic_x86 hook_x86
+	rm empty_main empty_main_pic empty_main_gdb init_array hook start_nostdlib t.bin hook_pic hook_pic_x86 hook_x86 scan_x86 scan strcpy_crash strcpy_crash_x86 callee_params callee_params_x86 ret_val ret_val_x86
 
 
 .PHONY: clean all
