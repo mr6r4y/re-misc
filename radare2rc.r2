@@ -27,6 +27,9 @@ e graph.cmtright = true
 # Show relative offset
 # e asm.reloff = true
 
+# Cache needed for ESIL
+e io.cache = true
+
 # -------------
 
 
