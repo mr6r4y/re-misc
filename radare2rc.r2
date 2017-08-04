@@ -28,7 +28,8 @@ e graph.cmtright = true
 # e asm.reloff = true
 
 # Cache needed for ESIL
-e io.cache = true
+# NOTE: It seems that when "io.cache" is true the breaks in "ood" are missed when "dc"
+# e io.cache = true
 
 # -------------
 
