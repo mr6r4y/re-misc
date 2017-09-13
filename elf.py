@@ -438,7 +438,9 @@ class ElfEhdr(u.R2Scriptable):
         for i in self.Elf_Ehdr_machine_enum_td:
             yield i
 
-        yield self.Elf_Ehdr_type_enum_td
+        for i in self.Elf_Ehdr_type_enum_td:
+            yield i
+
         yield "pf.Elf_Ehdr %s" % self.Elf_Ehdr_fmt
 
         yield "# Bug in:"
