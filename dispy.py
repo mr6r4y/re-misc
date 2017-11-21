@@ -8,7 +8,7 @@ _have_code = (types.MethodType, types.FunctionType, types.CodeType,
               types.ClassType, type)
 
 
-def dis(x=None):
+def dis(x=None, begin_i=0):
     """Disassemble classes, methods, functions, or code.
 
     With no argument, disassemble the last traceback.
@@ -35,18 +35,18 @@ def dis(x=None):
                     print "Sorry:", msg
                 print
     elif hasattr(x, 'co_code'):
-        return disassemble(x)
+        return disassemble(x, begin_i)
     else:
         raise (TypeError,
                "don't know how to disassemble %s objects" % type(x).__name__)
 
 
-def disassemble(co, lasti=-1):
+def disassemble(co, begin_i=0):
     """Disassemble a code object."""
 
     code = co.co_code
     n = len(code)
-    i = 0
+    i = begin_i
     extended_arg = 0
     free = None
     while i < n:
@@ -83,14 +83,16 @@ def disassemble(co, lasti=-1):
                 desc = '(to ' + repr(i + oparg) + ')'
                 # eliminating dead code
                 jmp_offset = i + oparg
-                if jmp_offset > i and jmp_offset <= n:
-                    i = jmp_offset
+                if opn in ("JUMP_FORWARD", ):
+                    if jmp_offset > i and jmp_offset <= n:
+                        i = jmp_offset
             elif op in hasjabs:
                 desc = '(to ' + repr(oparg) + ')'
                 # eliminating dead code
                 jmp_offset = oparg
-                if jmp_offset > i and jmp_offset <= n:
-                    i = jmp_offset
+                if opn in ("JUMP_ABSOLUTE", ):
+                    if jmp_offset > i and jmp_offset <= n:
+                        i = jmp_offset
             elif op in haslocal and oparg < len(co.co_varnames):
                 desc = '(' + co.co_varnames[oparg] + ')'
             elif op in hascompare and oparg < len(cmp_op):
