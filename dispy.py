@@ -8,7 +8,7 @@ _have_code = (types.MethodType, types.FunctionType, types.CodeType,
               types.ClassType, type)
 
 
-def dis(x=None, begin_i=0):
+def dis(x=None, begin_i=0, end_i=None):
     """Disassemble classes, methods, functions, or code.
 
     With no argument, disassemble the last traceback.
@@ -35,13 +35,13 @@ def dis(x=None, begin_i=0):
                     print "Sorry:", msg
                 print
     elif hasattr(x, 'co_code'):
-        return disassemble(x, begin_i)
+        return disassemble(x, begin_i, end_i)
     else:
         raise (TypeError,
                "don't know how to disassemble %s objects" % type(x).__name__)
 
 
-def disassemble(co, begin_i=0):
+def disassemble(co, begin_i=0, end_i=None):
     """Disassemble a code object."""
 
     code = co.co_code
@@ -76,31 +76,34 @@ def disassemble(co, begin_i=0):
             op_extarg = extended_arg
 
             if op in hasconst and oparg < len(co.co_consts):
-                desc = '(' + repr(co.co_consts[oparg]) + ')'
+                desc = ('CO_CONSTS', co.co_consts[oparg])
             elif op in hasname and oparg < len(co.co_names):
-                desc = '(' + co.co_names[oparg] + ')'
+                desc = ('CO_NAMES', co.co_names[oparg])
             elif op in hasjrel:
-                desc = '(to ' + repr(i + oparg) + ')'
+                desc = ('JREL', i + oparg)
                 # eliminating dead code
                 jmp_offset = i + oparg
                 if opn in ("JUMP_FORWARD", ):
                     if jmp_offset > i and jmp_offset <= n:
                         i = jmp_offset
             elif op in hasjabs:
-                desc = '(to ' + repr(oparg) + ')'
+                desc = ('JABS', oparg)
                 # eliminating dead code
                 jmp_offset = oparg
                 if opn in ("JUMP_ABSOLUTE", ):
                     if jmp_offset > i and jmp_offset <= n:
                         i = jmp_offset
             elif op in haslocal and oparg < len(co.co_varnames):
-                desc = '(' + co.co_varnames[oparg] + ')'
+                desc = ('CO_VARNAMES', co.co_varnames[oparg])
             elif op in hascompare and oparg < len(cmp_op):
-                desc = '(' + cmp_op[oparg] + ')'
+                desc = ('CMP_OP', cmp_op[oparg])
             elif op in hasfree:
                 if free is None:
                     free = co.co_cellvars + co.co_freevars
                 if oparg in free:
-                    desc = '(' + free[oparg] + ')'
+                    desc = ('FREEVARS', free[oparg])
 
         yield (ind, opn, op_arg, op_extarg, jmp_offset, desc)
+
+        if end_i is not None and i >= end_i:
+            break
