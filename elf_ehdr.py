@@ -7,7 +7,7 @@ import argparse
 import json
 
 import r2pipe as r2p
-import elf
+import relib.elf as elf
 
 
 __all__ = []

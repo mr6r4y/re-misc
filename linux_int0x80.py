@@ -4,7 +4,7 @@
 import argparse
 import platform
 
-import elf
+import relib.elf as elf
 import r2pipe as r2p
 
 
